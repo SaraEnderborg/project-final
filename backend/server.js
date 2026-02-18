@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
+import userRoutes from "./routes/userRoutes.js";
+import listEndPoints from "express-list-endpoints";
 
 const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/final-project";
 mongoose.connect(mongoUrl);
@@ -12,8 +14,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  res.send("Hello Technigo!");
+// routes
+app.use("/users", userRoutes);
+
+const endpoints = listEndPoints(app);
+
+app.get("/", (_req, res) => {
+  res.json({
+    message: "Hello History!",
+    endpoints,
+  });
 });
 
 // Start the server
