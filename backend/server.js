@@ -1,12 +1,19 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import userRoutes from "./routes/userRoutes.js";
 import listEndPoints from "express-list-endpoints";
 
-const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/final-project";
-mongoose.connect(mongoUrl);
-mongoose.Promise = Promise;
+const mongoUrl = process.env.MONGO_URL;
+
+try {
+  await mongoose.connect(mongoUrl);
+  console.log("Connected to MongoDB");
+} catch (error) {
+  console.error("MongoDB connection error:", error);
+  process.exit(1);
+}
 
 const port = process.env.PORT || 8080;
 const app = express();

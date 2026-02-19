@@ -6,12 +6,12 @@ const router = express.Router();
 
 router.post("/signup", async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!username || !email || !password) {
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Username, email, and password are required",
+        message: "Email, and password are required",
       });
     }
 
@@ -36,7 +36,6 @@ router.post("/signup", async (req, res) => {
     const salt = bcrypt.genSaltSync();
     const hashedPassword = bcrypt.hashSync(password, salt);
     const user = new User({
-      username,
       email: email.toLowerCase(),
       password: hashedPassword,
     });
@@ -47,9 +46,9 @@ router.post("/signup", async (req, res) => {
       success: true,
       message: "User created successfully",
       response: {
-        username: user.username,
         email: user.email,
         userId: user._id,
+        createdAt: user.createdAt,
         accessToken: user.accessToken,
       },
     });
@@ -73,7 +72,6 @@ router.post("/login", async (req, res) => {
         success: true,
         message: "Login successful",
         response: {
-          username: user.username,
           email: user.email,
           userId: user._id,
           accessToken: user.accessToken,
