@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import userRoutes from "./routes/userRoutes.js";
+import layersRoutes from "./api/layers/layers.routes.js";
 import listEndPoints from "express-list-endpoints";
 
 const mongoUri = process.env.MONGO_URI;
@@ -23,6 +24,7 @@ app.use(express.json());
 
 // routes
 app.use("/users", userRoutes);
+app.use("/layers", layersRoutes);
 
 const endpoints = listEndPoints(app);
 

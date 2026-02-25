@@ -1,4 +1,4 @@
-export const layerSeed = [
+export const layersSeed = [
   {
     name: "War & Organized Violence",
     slug: "war_organized_violence_europe",

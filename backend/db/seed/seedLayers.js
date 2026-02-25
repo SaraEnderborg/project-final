@@ -1,7 +1,7 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import layer from "../models/Layer.js";
-import { layerSeed } from "./layers.seed.js";
+import Layer from "../../models/Layer.js";
+import { layersSeed } from "./layers.seed.js";
 
 async function connectDB() {
   const uri = process.env.MONGO_URI;
@@ -30,10 +30,10 @@ async function seedLayers() {
     layersSeed.map((l) => l.slug),
   );
 
-  const ops = layersSeed.map((layer) => ({
+  const ops = layersSeed.map((layerDoc) => ({
     updateOne: {
-      filter: { slug: layer.slug },
-      update: { $set: layer },
+      filter: { slug: layerDoc.slug },
+      update: { $set: layerDoc },
       upsert: true,
     },
   }));
