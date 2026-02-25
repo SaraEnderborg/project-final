@@ -5,10 +5,10 @@ import mongoose from "mongoose";
 import userRoutes from "./routes/userRoutes.js";
 import listEndPoints from "express-list-endpoints";
 
-const mongoUrl = process.env.MONGO_URL;
+const mongoUri = process.env.MONGO_URI;
 
 try {
-  await mongoose.connect(mongoUrl);
+  await mongoose.connect(mongoUri);
   console.log("Connected to MongoDB");
 } catch (error) {
   console.error("MongoDB connection error:", error);

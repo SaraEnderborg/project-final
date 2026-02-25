@@ -1,0 +1,35 @@
+export const layerSeed = [
+  {
+    name: "War & Organized Violence",
+    slug: "war_organized_violence_europe",
+    region: "Europe",
+    rangeStart: new Date("1500-01-01"),
+    rangeEnd: new Date("2000-12-31"),
+    categories: [
+      "interstate_wars",
+      "civil_wars",
+      "revolutions_uprisings",
+      "genocides_mass_violence",
+      "military_alliances",
+    ],
+    isPublic: true,
+    ownerId: null,
+  },
+  {
+    name: "Medicine & Disease",
+    slug: "medicine_disease_europe",
+    region: "Europe",
+    rangeStart: new Date("1500-01-01"),
+    rangeEnd: new Date("2000-12-31"),
+    categories: [
+      "major_epidemics_pandemics",
+      "vaccines",
+      "medical_breakthroughs",
+      "public_health_reforms",
+      "hospital_systems",
+      "germ_theory_bacteriology",
+    ],
+    isPublic: true,
+    ownerId: null,
+  },
+];

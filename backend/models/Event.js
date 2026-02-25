@@ -3,7 +3,7 @@ import mongoose, { Schema } from "mongoose";
 const SourceSchema = new Schema({ label: String, url: String }, { _id: false });
 
 const WikimediaSchema = new Schema(
-  { imageUrl: String, credit: String, licenceUrl: String },
+  { imageUrl: String, credit: String, licenseUrl: String },
   { _id: false },
 );
 
