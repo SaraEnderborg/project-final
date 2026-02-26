@@ -27,7 +27,11 @@ export async function getLayerEvents(layerId, { from, to, category, tag }) {
 
   const query = {
     layerId: layer._id,
-    startDate: { $gte: fromDate, $lte: toDate },
+    $or: [
+      { startDate: { $gte: fromDate, $lte: toDate } },
+      { endDate: { $gte: fromDate, $lte: toDate } },
+      { startDate: { $lte: fromDate }, endDate: { $gte: toDate } },
+    ],
   };
 
   if (category) query.category = category;
