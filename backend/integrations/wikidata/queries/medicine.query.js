@@ -18,16 +18,17 @@ SELECT DISTINCT
   ?instance ?instanceLabel
   ?article
 WHERE {
- VALUES ?type {
-    wd:Q1369832   # epidemic
+  VALUES ?type {
+    wd:Q44512     # epidemic
+    wd:Q1516910   # plague epidemic
+    wd:Q2723958   # influenza pandemic
     wd:Q178561    # pandemic
-    wd:Q130003    # infectious disease outbreak
+    wd:Q1369832   # disease outbreak
     wd:Q11461     # vaccine
     wd:Q796194    # medical procedure
     wd:Q7314688   # medical discovery
-    wd:Q726097    # medical treatment
-    wd:Q4916596   # public health intervention
   }
+    
   ?event wdt:P31 ?type .
 
   {
