@@ -1,4 +1,3 @@
-// backend/api/layers/layers.controller.js
 import { getPublicLayers, getLayerEvents } from "./layers.service.js";
 
 export async function listLayers(_req, res) {

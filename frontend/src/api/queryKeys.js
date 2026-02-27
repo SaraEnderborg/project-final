@@ -1,12 +1,5 @@
-export const qk = {
+export const queryKeys = {
   layers: ["layers"],
-  timelineEvents: (layerId, viewport, filters) => [
-    "timelineEvents",
-    layerId,
-    viewport,
-    filters,
-  ],
-  eventDetails: (eventId) => ["eventDetails", eventId],
+  layerEvents: (layerId, params) => ["layers", layerId, "events", params],
   savedComparisons: ["savedComparisons"],
-  wikidataEntitySearch: (query) => ["wikidataEntitySearch", query],
 };

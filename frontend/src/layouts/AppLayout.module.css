@@ -1,0 +1,71 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=JetBrains+Mono:wght@300;400&display=swap");
+
+.root {
+  min-height: 100vh;
+  background: #0a0a0f;
+  color: #e8e4d9;
+  font-family: "JetBrains Mono", monospace;
+}
+
+.nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem 2.5rem;
+  border-bottom: 1px solid #1a1a2e;
+}
+
+.logo {
+  font-family: "Cormorant Garamond", serif;
+  font-size: 1.3rem;
+  font-weight: 300;
+  letter-spacing: 0.2em;
+  color: #e8e4d9;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.navLinks {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.navLink {
+  color: #555;
+  text-decoration: none;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.15s ease;
+}
+
+.navLink:hover {
+  color: #e8e4d9;
+}
+
+.userEmail {
+  color: #333;
+  font-size: 0.75rem;
+}
+
+.logoutBtn {
+  background: none;
+  border: none;
+  color: #555;
+  cursor: pointer;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.15s ease;
+  padding: 0;
+}
+
+.logoutBtn:hover {
+  color: #e8e4d9;
+}
+
+.main {
+  width: 100%;
+}

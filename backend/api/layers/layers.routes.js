@@ -1,4 +1,3 @@
-// backend/api/layers/layers.routes.js
 import express from "express";
 import { listLayers, listLayerEvents } from "./layers.controller.js";
 

@@ -1,0 +1,15 @@
+.axis {
+  position: relative;
+  height: 24px;
+  margin-top: 0.75rem;
+}
+
+.tick {
+  position: absolute;
+  left: var(--left);
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  color: #333;
+  font-family: "JetBrains Mono", monospace;
+  user-select: none;
+}

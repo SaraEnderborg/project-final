@@ -1,0 +1,42 @@
+.page {
+  padding: 3rem 2.5rem;
+  min-height: 100vh;
+  background: #0a0a0f;
+}
+
+.header {
+  margin-bottom: 3rem;
+}
+
+.title {
+  font-family: "Cormorant Garamond", serif;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  margin: 0 0 0.4rem;
+  color: #e8e4d9;
+}
+
+.subtitle {
+  color: #333;
+  font-size: 0.8rem;
+  font-family: "JetBrains Mono", monospace;
+  margin: 0;
+  letter-spacing: 0.1em;
+}
+
+.timeline {
+  position: relative;
+}
+
+.status {
+  color: #333;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+}
+
+.statusError {
+  color: #c0392b;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+}

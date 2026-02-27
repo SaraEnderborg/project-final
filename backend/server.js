@@ -24,7 +24,7 @@ app.use(express.json());
 
 // routes
 app.use("/users", userRoutes);
-app.use("/layers", layersRoutes);
+app.use("/api/layers", layersRoutes);
 
 const endpoints = listEndPoints(app);
 
