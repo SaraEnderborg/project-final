@@ -1,5 +1,3 @@
-// backend/jobs/import/war.job.js
-
 import "dotenv/config";
 import Layer from "../../models/Layer.js";
 import Event from "../../models/Event.js";

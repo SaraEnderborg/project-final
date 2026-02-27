@@ -1,4 +1,3 @@
-// backend/api/layers/layers.service.js
 import Layer from "../../models/Layer.js";
 import Event from "../../models/Event.js";
 
