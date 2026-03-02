@@ -1,8 +1,15 @@
 import "dotenv/config";
 import Layer from "../../models/Layer.js";
 import Event from "../../models/Event.js";
-import buildMedicineQuery from "../../integrations/wikidata/queries/medicine.query.js";
-import mapMedicineEvent from "../../integrations/wikidata/mappers/medicine.mapper.js";
+
+import buildEpidemicsQuery from "../../integrations/wikidata/queries/medicine/epidemics.query.js";
+import buildVaccinesQuery from "../../integrations/wikidata/queries/medicine/vaccines.query.js";
+import buildMedicalDiscoveriesQuery from "../../integrations/wikidata/queries/medicine/medicalDiscoveries.query.js";
+import buildPublicHealthQuery from "../../integrations/wikidata/queries/medicine/publicHealth.query.js";
+import buildHospitalsQuery from "../../integrations/wikidata/queries/medicine/hospitals.query.js";
+import buildGermTheoryQuery from "../../integrations/wikidata/queries/medicine/germTheory.query.js";
+
+import { buildEventDoc } from "../../integrations/wikidata/mappers/_mapperUtils.js";
 import { startFromCLI } from "./_runImport.js";
 
 const WIKIDATA_ENDPOINT = "https://query.wikidata.org/sparql";
@@ -37,38 +44,45 @@ async function fetchFromWikidata(sparql) {
   return data.results.bindings;
 }
 
+function makeFixedCategoryMapper(category) {
+  return (row, layerId) => buildEventDoc(row, layerId, () => category);
+}
+
 /**
- * Runs the medicine import job.
- * Fetches events from Wikidata and upserts them into MongoDB.
- *
- * @param {{ dryRun?: boolean }} options
- * @returns {Promise<Object>} Import summary
+ * Runs one category import (one query).
  */
-export async function runMedicineImport({ dryRun = false } = {}) {
-  const layer = await Layer.findOne({ slug: "medicine_disease_europe" }).lean();
-  if (!layer)
-    throw new Error("Medicine layer not found. Have you run the seed?");
+async function importCategory({ layer, category, buildQuery, dryRun }) {
+  console.log(`\n→ Importing category: ${category}`);
 
-  console.log(`Layer: ${layer.name} (${layer._id})`);
-
-  const sparql = buildMedicineQuery(layer.rangeStart, layer.rangeEnd);
+  const sparql = buildQuery(layer.rangeStart, layer.rangeEnd);
   const rows = await fetchFromWikidata(sparql);
   console.log(`Wikidata returned ${rows.length} rows`);
 
-  const docs = rows
-    .map((row) => mapMedicineEvent(row, layer._id))
-    .filter(Boolean);
+  const mapRow = makeFixedCategoryMapper(category);
+  const docs = rows.map((r) => mapRow(r, layer._id)).filter(Boolean);
+
   console.log(
     `Mapped ${docs.length} valid events (${rows.length - docs.length} skipped)`,
   );
 
   if (dryRun) {
-    console.log("Sample (first 3):", JSON.stringify(docs.slice(0, 3), null, 2));
+    console.log("Sample (first 2):", JSON.stringify(docs.slice(0, 2), null, 2));
     return {
+      category,
       total: rows.length,
       mapped: docs.length,
       upserted: 0,
-      dryRun: true,
+      modified: 0,
+    };
+  }
+
+  if (docs.length === 0) {
+    return {
+      category,
+      total: rows.length,
+      mapped: 0,
+      upserted: 0,
+      modified: 0,
     };
   }
 
@@ -85,16 +99,89 @@ export async function runMedicineImport({ dryRun = false } = {}) {
 
   const result = await Event.bulkWrite(ops, { ordered: false });
 
-  const summary = {
+  return {
+    category,
     total: rows.length,
     mapped: docs.length,
     upserted: result.upsertedCount,
     modified: result.modifiedCount,
-    dryRun: false,
+  };
+}
+
+/**
+ * Runs the medicine import job (6 separate queries).
+ *
+ * @param {{ dryRun?: boolean }} options
+ * @returns {Promise<Object>} Import summary
+ */
+export async function runMedicineImport({ dryRun = false } = {}) {
+  const layer = await Layer.findOne({ slug: "medicine_disease_europe" }).lean();
+  if (!layer)
+    throw new Error("Medicine layer not found. Have you run the seed?");
+
+  console.log(`Layer: ${layer.name} (${layer._id})`);
+  console.log(
+    `Range: ${layer.rangeStart.toISOString()} → ${layer.rangeEnd.toISOString()}`,
+  );
+
+  const tasks = [
+    {
+      category: "major_epidemics_pandemics",
+      buildQuery: buildEpidemicsQuery,
+    },
+    {
+      category: "vaccines",
+      buildQuery: buildVaccinesQuery,
+    },
+    {
+      category: "medical_breakthroughs",
+      buildQuery: buildMedicalDiscoveriesQuery,
+    },
+    {
+      category: "public_health_reforms",
+      buildQuery: buildPublicHealthQuery,
+    },
+    {
+      category: "hospital_systems",
+      buildQuery: buildHospitalsQuery,
+    },
+    {
+      category: "germ_theory_bacteriology",
+      buildQuery: buildGermTheoryQuery,
+    },
+  ];
+
+  const results = [];
+  for (const t of tasks) {
+    // sequential is kinder to Wikidata + easier to read logs
+    const r = await importCategory({
+      layer,
+      category: t.category,
+      buildQuery: t.buildQuery,
+      dryRun,
+    });
+    results.push(r);
+  }
+
+  const summary = results.reduce(
+    (acc, r) => {
+      acc.total += r.total;
+      acc.mapped += r.mapped;
+      acc.upserted += r.upserted;
+      acc.modified += r.modified;
+      return acc;
+    },
+    { total: 0, mapped: 0, upserted: 0, modified: 0 },
+  );
+
+  const full = {
+    ...summary,
+    perCategory: results,
+    dryRun,
   };
 
-  console.log("Import complete:", summary);
-  return summary;
+  console.log("\nImport complete:", full);
+  return full;
 }
 
 // CLI entry point

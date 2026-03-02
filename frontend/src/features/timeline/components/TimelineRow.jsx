@@ -4,13 +4,13 @@ import styles from "../styles/TimelineRow.module.css";
 import { LAYER_ACCENT, CATEGORY_COLORS, dateToPercent } from "../constants";
 import EventDot from "./EventDot";
 
-const CLUSTER_PX = 10; // hur nära (i px) events måste ligga för att klustras
-const EXPLODE_SPACING = 12; // px mellan dots i explode
-const EXPLODE_DY = 12; // vertikal offset upp/ner
-const MAX_EXPLODE = 24; // säkerhetscap så det inte exploderar 200 dots
+const CLUSTER_PX = 8; // lite tightare än 10 för att undvika mega-clusters
+const EXPLODE_DY = 12; // vertikalt varannan upp/ner
+const EXPLODE_DX = 10; // bara om flera har exakt samma x
+const MAX_EXPLODE = 60; // visa fler i explode (valfritt)
 
 function getClusterColor(events) {
-  const cats = new Set(events.map((e) => e.category));
+  const cats = new Set(events.map((x) => x.event.category));
   if (cats.size === 1) {
     const cat = [...cats][0];
     return CATEGORY_COLORS[cat] ?? "#888";
@@ -30,37 +30,32 @@ export default function TimelineRow({
   const [trackWidth, setTrackWidth] = useState(0);
   const [explodedKey, setExplodedKey] = useState(null);
 
-  // Measure track width (ResizeObserver)
+  // Measure track width
   useEffect(() => {
     if (!trackRef.current) return;
 
     const el = trackRef.current;
-
     const ro = new ResizeObserver(() => {
-      const rect = el.getBoundingClientRect();
-      setTrackWidth(rect.width);
+      setTrackWidth(el.getBoundingClientRect().width);
     });
 
     ro.observe(el);
-
-    // init
-    const rect = el.getBoundingClientRect();
-    setTrackWidth(rect.width);
+    setTrackWidth(el.getBoundingClientRect().width);
 
     return () => ro.disconnect();
   }, []);
 
-  // Pixel-based clustering (screen proximity)
+  // Build pixel-based clusters WITHOUT chain-merging
   const clusters = useMemo(() => {
     if (!events || events.length === 0) return [];
 
-    // fallback: no clustering until we know width
+    // If we can't measure yet, render singles (no clustering) to avoid weirdness
     if (!trackWidth) {
       return events.map((e) => ({
         key: e._id,
         type: "single",
         leftPercent: dateToPercent(e.startDate),
-        events: [e],
+        items: [{ event: e, leftPercent: dateToPercent(e.startDate) }],
       }));
     }
 
@@ -68,22 +63,24 @@ export default function TimelineRow({
       .map((e) => {
         const leftPercent = dateToPercent(e.startDate);
         const xPx = (leftPercent / 100) * trackWidth;
-        return { e, leftPercent, xPx };
+        return { event: e, leftPercent, xPx };
       })
       .sort((a, b) => a.xPx - b.xPx);
 
     const groups = [];
     let group = [items[0]];
+    let groupStartX = items[0].xPx;
 
     for (let i = 1; i < items.length; i++) {
-      const prev = items[i - 1];
       const curr = items[i];
 
-      if (curr.xPx - prev.xPx <= CLUSTER_PX) {
+      // IMPORTANT: compare to groupStartX to avoid chain effect
+      if (curr.xPx - groupStartX <= CLUSTER_PX) {
         group.push(curr);
       } else {
         groups.push(group);
         group = [curr];
+        groupStartX = curr.xPx;
       }
     }
     groups.push(group);
@@ -91,21 +88,19 @@ export default function TimelineRow({
     return groups.map((g, idx) => {
       const leftAvgPx = g.reduce((sum, it) => sum + it.xPx, 0) / g.length;
       const leftPercent = (leftAvgPx / trackWidth) * 100;
-      const eventsInCluster = g.map((it) => it.e);
 
-      // stable-ish key: layer + group index + approx px + size
-      const key = `${layer._id}-${idx}-${Math.round(leftAvgPx)}-${eventsInCluster.length}`;
+      const key = `${layer._id}-${idx}-${Math.round(leftAvgPx)}-${g.length}`;
 
       return {
         key,
-        type: eventsInCluster.length === 1 ? "single" : "cluster",
+        type: g.length === 1 ? "single" : "cluster",
         leftPercent,
-        events: eventsInCluster,
+        items: g, // [{event,leftPercent,xPx}]
       };
     });
   }, [events, trackWidth, layer._id]);
 
-  // Close explosion if cluster no longer exists
+  // Close explosion if cluster disappears
   useEffect(() => {
     if (!explodedKey) return;
     const stillExists = clusters.some(
@@ -118,17 +113,14 @@ export default function TimelineRow({
     setExplodedKey((prev) => (prev === key ? null : key));
   }, []);
 
-  // Click outside to close exploded cluster
+  // Click outside closes explosion
   useEffect(() => {
     if (!explodedKey) return;
 
     const onDocMouseDown = (e) => {
       const trackEl = trackRef.current;
       if (!trackEl) return;
-
-      if (!trackEl.contains(e.target)) {
-        setExplodedKey(null);
-      }
+      if (!trackEl.contains(e.target)) setExplodedKey(null);
     };
 
     document.addEventListener("mousedown", onDocMouseDown);
@@ -147,40 +139,39 @@ export default function TimelineRow({
 
         {clusters.map((c) => {
           if (c.type === "single") {
-            const event = c.events[0];
+            const it = c.items[0];
             return (
               <EventDot
-                key={event._id}
-                event={event}
+                key={it.event._id}
+                event={it.event}
                 onClick={onEventClick}
-                isSelected={selectedEvent?._id === event._id}
+                isSelected={selectedEvent?._id === it.event._id}
+                leftOverride={it.leftPercent} // explicit, stabilt
               />
             );
           }
 
           const isExploded = explodedKey === c.key;
 
-          // Cluster dot
-          const clusterColor = getClusterColor(c.events);
+          const clusterColor = getClusterColor(c.items);
+          const count = c.items.length;
 
-          // Exploded items (cap + sort)
-          const explodedEvents = c.events
+          // sort for explode
+          const explodedItems = c.items
             .slice()
-            .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+            .sort((a, b) => a.xPx - b.xPx)
             .slice(0, MAX_EXPLODE);
 
-          const hiddenCount = Math.max(
-            0,
-            c.events.length - explodedEvents.length,
-          );
+          const hiddenCount = Math.max(0, count - explodedItems.length);
 
+          // cluster dot
           return (
             <div key={c.key}>
               <EventDot
                 event={{
                   _id: c.key,
-                  title: `${c.events.length} events`,
-                  startDate: new Date(), // unused (vi använder leftOverride)
+                  title: `${count} events`,
+                  startDate: new Date(), // unused (leftOverride)
                   category: "mixed",
                 }}
                 onClick={() => toggleExplode(c.key)}
@@ -188,38 +179,45 @@ export default function TimelineRow({
                 title={
                   isExploded
                     ? "Click to collapse"
-                    : `${c.events.length} events (click to expand)`
+                    : `${count} events (click to expand)`
                 }
-                dataCount={c.events.length}
+                dataCount={count}
                 colorOverride={clusterColor}
                 leftOverride={c.leftPercent}
                 className={dotStyles.cluster}
               />
 
-              {/* Exploded dots */}
+              {/* exploded dots: show on their REAL year */}
               {isExploded &&
-                explodedEvents.map((event, i, arr) => {
-                  const mid = (arr.length - 1) / 2;
-                  const dx = Math.round((i - mid) * EXPLODE_SPACING);
+                explodedItems.map((it, i) => {
+                  // If multiple events share the same xPx (same pixel), nudge sideways.
+                  // Group identical xPx into small stacks:
+                  const sameX = explodedItems.filter(
+                    (x) => Math.abs(x.xPx - it.xPx) < 0.5,
+                  );
+                  let dx = 0;
+                  if (sameX.length > 1) {
+                    const j = sameX.findIndex(
+                      (x) => x.event._id === it.event._id,
+                    );
+                    const mid = (sameX.length - 1) / 2;
+                    dx = Math.round((j - mid) * EXPLODE_DX);
+                  }
+
                   const dy = i % 2 === 0 ? -EXPLODE_DY : EXPLODE_DY;
 
                   return (
                     <EventDot
-                      key={event._id}
-                      event={event}
-                      onClick={(e) => {
-                        onEventClick(e);
-                        // valfritt: stäng explosion när man väljer ett event
-                        // setExplodedKey(null);
-                      }}
-                      isSelected={selectedEvent?._id === event._id}
+                      key={it.event._id}
+                      event={it.event}
+                      onClick={onEventClick}
+                      isSelected={selectedEvent?._id === it.event._id}
+                      leftOverride={it.leftPercent}
                       offset={{ dx, dy }}
-                      leftOverride={c.leftPercent}
                     />
                   );
                 })}
 
-              {/* Optional: “+N more” hint (om cap slår in) */}
               {isExploded && hiddenCount > 0 && (
                 <EventDot
                   event={{

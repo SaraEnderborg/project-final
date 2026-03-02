@@ -1,5 +1,3 @@
-// backend/integrations/wikidata/mappers/medicine.mapper.js
-
 import { buildEventDoc } from "./_mapperUtils.js";
 
 function mapCategory(instanceLabel) {
@@ -39,5 +37,5 @@ function mapCategory(instanceLabel) {
 }
 
 export default function mapMedicineEvent(row, layerId) {
-  return buildEventDoc(row, layerId, mapCategory);
+  return buildEventDoc(row, layerId, (r) => mapCategory(r?.typeLabel?.value));
 }

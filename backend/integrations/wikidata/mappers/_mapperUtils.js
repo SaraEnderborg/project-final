@@ -48,7 +48,7 @@ export function buildEventDoc(row, layerId, mapCategory) {
     summary: row.eventDescription?.value || null,
     startDate,
     endDate: endDate || null,
-    category: mapCategory(row.instanceLabel?.value),
+    category: mapCategory(row),
     tags: [],
     location,
     sources,

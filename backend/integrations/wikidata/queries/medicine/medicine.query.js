@@ -1,21 +1,16 @@
-/**
- * Returns a SPARQL query for fetching medicine and disease events in Europe
- * from Wikidata within a given date range.
- *
- * @param {Date} rangeStart
- * @param {Date} rangeEnd
- * @returns {string} SPARQL query
- */
 export default function buildMedicineQuery(rangeStart, rangeEnd) {
   const from = rangeStart.toISOString().split("T")[0];
   const to = rangeEnd.toISOString().split("T")[0];
 
   return `
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX schema: <http://schema.org/>
+
 SELECT DISTINCT
   ?event ?eventLabel ?eventDescription
   ?startDate ?endDate
   ?countryLabel ?locationLabel
-  ?instance ?instanceLabel
+  ?type ?typeLabel
   ?article
 WHERE {
   VALUES ?type {
@@ -28,7 +23,7 @@ WHERE {
     wd:Q796194    # medical procedure
     wd:Q7314688   # medical discovery
   }
-    
+
   ?event wdt:P31 ?type .
 
   {
@@ -56,7 +51,6 @@ WHERE {
   OPTIONAL { ?event wdt:P582 ?endDate . }
   OPTIONAL { ?event wdt:P17 ?country . }
   OPTIONAL { ?event wdt:P276 ?location . }
-  OPTIONAL { ?event wdt:P31 ?instance . }
 
   OPTIONAL {
     ?article schema:about ?event .

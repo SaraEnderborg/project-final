@@ -1,5 +1,3 @@
-// backend/integrations/wikidata/queries/war.query.js
-
 /**
  * Returns a SPARQL query for fetching wars and organized violence in Europe
  * from Wikidata within a given date range.
@@ -13,11 +11,15 @@ export default function buildWarQuery(rangeStart, rangeEnd) {
   const to = rangeEnd.toISOString().split("T")[0];
 
   return `
+
+  PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+  PREFIX schema: <http://schema.org/>
+  
 SELECT DISTINCT
   ?event ?eventLabel ?eventDescription
   ?startDate ?endDate
   ?countryLabel ?locationLabel
-  ?instance ?instanceLabel
+  ?type
   ?article
 WHERE {
   VALUES ?type {
@@ -49,7 +51,6 @@ WHERE {
   OPTIONAL { ?event wdt:P582 ?endDate . }
   OPTIONAL { ?event wdt:P17 ?country . }
   OPTIONAL { ?event wdt:P276 ?location . }
-  OPTIONAL { ?event wdt:P31 ?instance . }
 
   OPTIONAL {
     ?article schema:about ?event .
