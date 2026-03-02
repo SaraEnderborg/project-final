@@ -44,6 +44,34 @@ async function fetchFromWikidata(sparql) {
   return data.results.bindings;
 }
 
+/**
+ * Dedupes mapped docs by Wikidata QID.
+ * Prefers a doc with a more specific location if duplicates exist.
+ */
+function dedupeByWikidataQid(docs) {
+  const map = new Map();
+
+  for (const doc of docs) {
+    const qid = doc?.externalIds?.wikidataQid;
+    if (!qid) continue;
+
+    const existing = map.get(qid);
+    if (!existing) {
+      map.set(qid, doc);
+      continue;
+    }
+
+    const existingHasLocation = !!existing.location;
+    const docHasLocation = !!doc.location;
+
+    if (!existingHasLocation && docHasLocation) {
+      map.set(qid, doc);
+    }
+  }
+
+  return [...map.values()];
+}
+
 function makeFixedCategoryMapper(category) {
   return (row, layerId) => buildEventDoc(row, layerId, () => category);
 }
@@ -59,8 +87,11 @@ async function importCategory({ layer, category, buildQuery, dryRun }) {
   console.log(`Wikidata returned ${rows.length} rows`);
 
   const mapRow = makeFixedCategoryMapper(category);
-  const docs = rows.map((r) => mapRow(r, layer._id)).filter(Boolean);
 
+  const docsRaw = rows.map((r) => mapRow(r, layer._id)).filter(Boolean);
+  const docs = dedupeByWikidataQid(docsRaw);
+
+  console.log(`Deduped ${docsRaw.length} → ${docs.length} by wikidataQid`);
   console.log(
     `Mapped ${docs.length} valid events (${rows.length - docs.length} skipped)`,
   );
@@ -153,7 +184,6 @@ export async function runMedicineImport({ dryRun = false } = {}) {
 
   const results = [];
   for (const t of tasks) {
-    // sequential is kinder to Wikidata + easier to read logs
     const r = await importCategory({
       layer,
       category: t.category,
@@ -174,12 +204,7 @@ export async function runMedicineImport({ dryRun = false } = {}) {
     { total: 0, mapped: 0, upserted: 0, modified: 0 },
   );
 
-  const full = {
-    ...summary,
-    perCategory: results,
-    dryRun,
-  };
-
+  const full = { ...summary, perCategory: results, dryRun };
   console.log("\nImport complete:", full);
   return full;
 }
