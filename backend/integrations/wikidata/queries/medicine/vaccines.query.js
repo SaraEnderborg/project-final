@@ -16,8 +16,7 @@ ${basePrefixes()}
 
 ${baseSelect()}
   VALUES ?type {
-    wd:Q11461     # vaccine
-    wd:Q134808    # vaccination (sometimes used)
+    wd:Q134808   # vaccination
   }
 
   ?event wdt:P31 ?type .

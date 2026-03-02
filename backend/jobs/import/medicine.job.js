@@ -6,7 +6,7 @@ import buildEpidemicsQuery from "../../integrations/wikidata/queries/medicine/ep
 import buildVaccinesQuery from "../../integrations/wikidata/queries/medicine/vaccines.query.js";
 import buildMedicalDiscoveriesQuery from "../../integrations/wikidata/queries/medicine/medicalDiscoveries.query.js";
 import buildPublicHealthQuery from "../../integrations/wikidata/queries/medicine/publicHealth.query.js";
-import buildHospitalsQuery from "../../integrations/wikidata/queries/medicine/hospitals.query.js";
+//import buildHospitalsQuery from "../../integrations/wikidata/queries/medicine/hospitals.query.js";
 import buildGermTheoryQuery from "../../integrations/wikidata/queries/medicine/germTheory.query.js";
 
 import { buildEventDoc } from "../../integrations/wikidata/mappers/_mapperUtils.js";
@@ -22,26 +22,57 @@ const USER_AGENT =
  * @param {string} sparql
  * @returns {Promise<Object[]>}
  */
-async function fetchFromWikidata(sparql) {
+async function fetchFromWikidata(sparql, { retries = 3 } = {}) {
   const url = new URL(WIKIDATA_ENDPOINT);
   url.searchParams.set("query", sparql);
   url.searchParams.set("format", "json");
 
-  const response = await fetch(url.toString(), {
-    headers: {
-      Accept: "application/sparql-results+json",
-      "User-Agent": USER_AGENT,
-    },
-  });
+  let lastErr;
 
-  if (!response.ok) {
-    throw new Error(
-      `Wikidata responded with ${response.status}: ${await response.text()}`,
-    );
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(url.toString(), {
+        headers: {
+          Accept: "application/sparql-results+json",
+          "User-Agent": USER_AGENT,
+        },
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+
+        // Retry on transient upstream issues
+        if (
+          [429, 502, 503, 504].includes(response.status) &&
+          attempt < retries
+        ) {
+          const delayMs = 800 * attempt;
+          console.log(
+            `Wikidata ${response.status} (attempt ${attempt}/${retries}) – retrying in ${delayMs}ms...`,
+          );
+          await new Promise((r) => setTimeout(r, delayMs));
+          continue;
+        }
+
+        throw new Error(`Wikidata responded with ${response.status}: ${text}`);
+      }
+
+      const data = await response.json();
+      return data.results.bindings;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries) {
+        const delayMs = 800 * attempt;
+        console.log(
+          `Fetch failed (attempt ${attempt}/${retries}) – retrying in ${delayMs}ms...`,
+        );
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+    }
   }
 
-  const data = await response.json();
-  return data.results.bindings;
+  throw lastErr;
 }
 
 /**
@@ -173,8 +204,8 @@ export async function runMedicineImport({ dryRun = false } = {}) {
       buildQuery: buildPublicHealthQuery,
     },
     {
-      category: "hospital_systems",
-      buildQuery: buildHospitalsQuery,
+      // category: "hospital_systems",
+      // buildQuery: buildHospitalsQuery,
     },
     {
       category: "germ_theory_bacteriology",
@@ -184,15 +215,28 @@ export async function runMedicineImport({ dryRun = false } = {}) {
 
   const results = [];
   for (const t of tasks) {
-    const r = await importCategory({
-      layer,
-      category: t.category,
-      buildQuery: t.buildQuery,
-      dryRun,
-    });
-    results.push(r);
+    try {
+      const r = await importCategory({
+        layer,
+        category: t.category,
+        buildQuery: t.buildQuery,
+        dryRun,
+      });
+      results.push(r);
+    } catch (err) {
+      console.log(
+        `Skipping category ${t.category} due to error: ${err.message}`,
+      );
+      results.push({
+        category: t.category,
+        total: 0,
+        mapped: 0,
+        upserted: 0,
+        modified: 0,
+        error: err.message,
+      });
+    }
   }
-
   const summary = results.reduce(
     (acc, r) => {
       acc.total += r.total;
@@ -213,3 +257,5 @@ export async function runMedicineImport({ dryRun = false } = {}) {
 // node backend/jobs/import/medicine.job.js
 // node backend/jobs/import/medicine.job.js --dry-run
 startFromCLI("medicine.job.js", runMedicineImport, "medicine");
+
+// TODO: category: "hospital_systems",

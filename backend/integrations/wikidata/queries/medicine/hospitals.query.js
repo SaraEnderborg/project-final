@@ -23,16 +23,9 @@ ${baseSelect()}
 
   {
     ?event wdt:P571 ?startDate .  # inception for institutions
-  } UNION {
-    ?event wdt:P580 ?startDate .
-  } UNION {
-    ?event wdt:P577 ?startDate .
   }
-
   FILTER(?startDate >= "${from}"^^xsd:dateTime)
   FILTER(?startDate <= "${to}"^^xsd:dateTime)
-
-  OPTIONAL { ?event wdt:P582 ?endDate . }
 
   FILTER NOT EXISTS { ?event wdt:P31/wdt:P279* wd:Q180684 . }
 
