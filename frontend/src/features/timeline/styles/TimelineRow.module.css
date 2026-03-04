@@ -24,6 +24,10 @@
   background: #0f0f1a;
   border: 1px solid #1a1a2e;
   border-radius: 2px;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .centerLine {

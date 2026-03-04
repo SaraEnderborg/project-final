@@ -6,6 +6,7 @@ import TimelineRow from "./components/TimelineRow";
 import YearAxis from "./components/YearAxis";
 import EventPanel from "./components/EventPanel";
 import styles from "./styles/TimelinePage.module.css";
+
 function ActiveLayer({
   layerId,
   layers,
@@ -28,31 +29,34 @@ function ActiveLayer({
   if (isError)
     return <p className={styles.statusError}>Failed to load {layer.name}</p>;
 
+  const selectId = `category-select-${layerId}`;
+
   return (
     <>
-      {/* CATEGORY FILTER */}
       <div className={styles.layerControls}>
-        <label className={styles.controlLabel}>
+        <label className={styles.controlLabel} htmlFor={selectId}>
           Category
-          <select
-            className={styles.select}
-            value={category ?? ""}
-            onChange={(e) => onCategoryChange(layerId, e.target.value)}
-          >
-            <option value="">All</option>
-
-            {(layer.categories ?? []).map((cat) => (
-              <option key={cat} value={cat}>
-                {cat.replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
         </label>
 
-        <span className={styles.countInline}>
+        <select
+          id={selectId}
+          className={styles.select}
+          value={category ?? ""}
+          onChange={(e) => onCategoryChange(layerId, e.target.value)}
+        >
+          <option value="">All</option>
+          {(layer.categories ?? []).map((cat) => (
+            <option key={cat} value={cat}>
+              {cat.replace(/_/g, " ")}
+            </option>
+          ))}
+        </select>
+
+        <span className={styles.contInline}>
           {data?.events?.length ?? 0} events
         </span>
       </div>
+
       {/* TIMELINE */}
       <TimelineRow
         layer={layer}
@@ -76,11 +80,19 @@ export default function TimelinePage() {
     if (layers.length > 0 && selectedLayerIds.length === 0) {
       setSelectedLayerIds([layers[0]._id]);
     }
-  }, [layers]);
+  }, [layers, selectedLayerIds.length]);
 
   const handleToggleLayer = useCallback((id) => {
     setSelectedLayerIds((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id);
+      if (prev.includes(id)) {
+        setCategoryByLayerId((cats) => {
+          const next = { ...cats };
+          delete next[id];
+          return next;
+        });
+        return prev.filter((x) => x !== id);
+      }
+
       if (prev.length >= 2) return [...prev.slice(1), id];
       return [...prev, id];
     });
@@ -99,22 +111,25 @@ export default function TimelinePage() {
     return <p className={styles.statusError}>Failed to load layers.</p>;
 
   return (
-    <div className={styles.page}>
+    <div className={`${styles.page} ${styles.safeWrap}`}>
       <div className={styles.header}>
         <h1 className={styles.title}>Historical Timeline</h1>
         <p className={styles.subtitle}>Europe · 1500–2000</p>
       </div>
 
-      <LayerSelector
-        layers={layers}
-        selectedIds={selectedLayerIds}
-        onToggle={handleToggleLayer}
-      />
+      <div className={styles.layerSelector}>
+        <LayerSelector
+          layers={layers}
+          selectedIds={selectedLayerIds}
+          onToggle={handleToggleLayer}
+        />
+      </div>
 
       <div className={styles.timeline}>
         {selectedLayerIds.length === 0 && (
           <p className={styles.status}>Select a layer above to begin.</p>
         )}
+
         {selectedLayerIds.map((id) => (
           <ActiveLayer
             key={id}
@@ -126,6 +141,7 @@ export default function TimelinePage() {
             onCategoryChange={handleCategoryChange}
           />
         ))}
+
         <YearAxis />
       </div>
 

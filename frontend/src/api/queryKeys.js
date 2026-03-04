@@ -1,6 +1,5 @@
 export const queryKeys = {
   layers: ["layers"],
-
   layerEvents: (layerId, params = {}) => [
     "layers",
     layerId,
@@ -8,7 +7,7 @@ export const queryKeys = {
     params.from ?? null,
     params.to ?? null,
     params.category ?? null,
+    params.tag ?? null,
   ],
-
   savedComparisons: ["savedComparisons"],
 };

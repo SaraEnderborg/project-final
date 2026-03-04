@@ -15,13 +15,17 @@ export default function EventDot({
   const color = colorOverride ?? CATEGORY_COLORS[event.category] ?? "#888";
   const left = leftOverride ?? dateToPercent(event.startDate);
 
+  const label = title ?? event.title;
+
   return (
-    <div
+    <button
+      type="button"
       className={`${styles.dot} ${className ?? ""} ${
         isSelected ? styles.selected : ""
       }`}
       onClick={() => onClick(event)}
-      title={title ?? event.title}
+      title={label}
+      aria-label={label}
       data-count={dataCount}
       style={{
         "--color": color,

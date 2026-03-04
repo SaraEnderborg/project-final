@@ -7,7 +7,7 @@ import EventDot from "./EventDot";
 const CLUSTER_PX = 8; // lite tightare än 10 för att undvika mega-clusters
 const EXPLODE_DY = 12; // vertikalt varannan upp/ner
 const EXPLODE_DX = 10; // bara om flera har exakt samma x
-const MAX_EXPLODE = 60; // visa fler i explode (valfritt)
+const MAX_EXPLODE = 60; // visa fler i explode
 
 function getClusterColor(events) {
   const cats = new Set(events.map((x) => x.event.category));
@@ -15,7 +15,7 @@ function getClusterColor(events) {
     const cat = [...cats][0];
     return CATEGORY_COLORS[cat] ?? "#888";
   }
-  return "#b0b0b0"; // mixed
+  return "#b0b0b0";
 }
 
 export default function TimelineRow({
@@ -30,13 +30,19 @@ export default function TimelineRow({
   const [trackWidth, setTrackWidth] = useState(0);
   const [explodedKey, setExplodedKey] = useState(null);
 
-  // Measure track width
   useEffect(() => {
     if (!trackRef.current) return;
 
     const el = trackRef.current;
+
+    const measure = () => {
+      const w = el.getBoundingClientRect().width;
+      setTrackWidth(Math.max(0, w - 20));
+    };
+
     const ro = new ResizeObserver(() => {
-      setTrackWidth(el.getBoundingClientRect().width);
+      const w = el.getBoundingClientRect().width;
+      setTrackWidth(Math.max(0, w - 20));
     });
 
     ro.observe(el);
@@ -45,7 +51,6 @@ export default function TimelineRow({
     return () => ro.disconnect();
   }, []);
 
-  // Build pixel-based clusters WITHOUT chain-merging
   const clusters = useMemo(() => {
     if (!events || events.length === 0) return [];
 
@@ -74,7 +79,6 @@ export default function TimelineRow({
     for (let i = 1; i < items.length; i++) {
       const curr = items[i];
 
-      // IMPORTANT: compare to groupStartX to avoid chain effect
       if (curr.xPx - groupStartX <= CLUSTER_PX) {
         group.push(curr);
       } else {
@@ -95,12 +99,11 @@ export default function TimelineRow({
         key,
         type: g.length === 1 ? "single" : "cluster",
         leftPercent,
-        items: g, // [{event,leftPercent,xPx}]
+        items: g,
       };
     });
   }, [events, trackWidth, layer._id]);
 
-  // Close explosion if cluster disappears
   useEffect(() => {
     if (!explodedKey) return;
     const stillExists = clusters.some(
@@ -146,7 +149,7 @@ export default function TimelineRow({
                 event={it.event}
                 onClick={onEventClick}
                 isSelected={selectedEvent?._id === it.event._id}
-                leftOverride={it.leftPercent} // explicit, stabilt
+                leftOverride={it.leftPercent}
               />
             );
           }
@@ -186,12 +189,8 @@ export default function TimelineRow({
                 leftOverride={c.leftPercent}
                 className={dotStyles.cluster}
               />
-
-              {/* exploded dots: show on their REAL year */}
               {isExploded &&
                 explodedItems.map((it, i) => {
-                  // If multiple events share the same xPx (same pixel), nudge sideways.
-                  // Group identical xPx into small stacks:
                   const sameX = explodedItems.filter(
                     (x) => Math.abs(x.xPx - it.xPx) < 0.5,
                   );
