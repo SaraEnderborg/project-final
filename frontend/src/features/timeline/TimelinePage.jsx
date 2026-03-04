@@ -6,24 +6,61 @@ import TimelineRow from "./components/TimelineRow";
 import YearAxis from "./components/YearAxis";
 import EventPanel from "./components/EventPanel";
 import styles from "./styles/TimelinePage.module.css";
-
-function ActiveLayer({ layerId, layers, selectedEvent, onEventClick }) {
+function ActiveLayer({
+  layerId,
+  layers,
+  selectedEvent,
+  onEventClick,
+  category,
+  onCategoryChange,
+}) {
   const layer = layers.find((l) => l._id === layerId);
-  const { data, isLoading, isError } = useLayerEvents(layerId);
+
+  const { data, isLoading, isError } = useLayerEvents(layerId, {
+    category: category || undefined,
+  });
 
   if (!layer) return null;
+
   if (isLoading)
     return <p className={styles.status}>Loading {layer.name}...</p>;
+
   if (isError)
     return <p className={styles.statusError}>Failed to load {layer.name}</p>;
 
   return (
-    <TimelineRow
-      layer={layer}
-      events={data?.events ?? []}
-      selectedEvent={selectedEvent}
-      onEventClick={onEventClick}
-    />
+    <>
+      {/* CATEGORY FILTER */}
+      <div className={styles.layerControls}>
+        <label className={styles.controlLabel}>
+          Category
+          <select
+            className={styles.select}
+            value={category ?? ""}
+            onChange={(e) => onCategoryChange(layerId, e.target.value)}
+          >
+            <option value="">All</option>
+
+            {(layer.categories ?? []).map((cat) => (
+              <option key={cat} value={cat}>
+                {cat.replace(/_/g, " ")}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <span className={styles.countInline}>
+          {data?.events?.length ?? 0} events
+        </span>
+      </div>
+      {/* TIMELINE */}
+      <TimelineRow
+        layer={layer}
+        events={data?.events ?? []}
+        selectedEvent={selectedEvent}
+        onEventClick={onEventClick}
+      />
+    </>
   );
 }
 
@@ -31,6 +68,7 @@ export default function TimelinePage() {
   const { data: layersData, isLoading, isError } = useLayers();
   const [selectedLayerIds, setSelectedLayerIds] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [categoryByLayerId, setCategoryByLayerId] = useState({});
 
   const layers = layersData ?? [];
 
@@ -50,6 +88,10 @@ export default function TimelinePage() {
 
   const handleEventClick = useCallback((event) => {
     setSelectedEvent((prev) => (prev?._id === event._id ? null : event));
+  }, []);
+
+  const handleCategoryChange = useCallback((layerId, value) => {
+    setCategoryByLayerId((prev) => ({ ...prev, [layerId]: value || null }));
   }, []);
 
   if (isLoading) return <p className={styles.status}>Loading layers...</p>;
@@ -80,6 +122,8 @@ export default function TimelinePage() {
             layers={layers}
             selectedEvent={selectedEvent}
             onEventClick={handleEventClick}
+            category={categoryByLayerId[id] ?? ""}
+            onCategoryChange={handleCategoryChange}
           />
         ))}
         <YearAxis />

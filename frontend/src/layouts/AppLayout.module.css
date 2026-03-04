@@ -7,10 +7,12 @@
   font-family: "JetBrains Mono", monospace;
 }
 
-.nav {
+/* TOPBAR */
+.topbar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
   padding: 1.25rem 2.5rem;
   border-bottom: 1px solid #1a1a2e;
 }
@@ -25,7 +27,7 @@
   text-transform: uppercase;
 }
 
-.navLinks {
+.topbarRight {
   display: flex;
   gap: 1.5rem;
   align-items: center;
@@ -66,6 +68,106 @@
   color: #e8e4d9;
 }
 
+/* LAYOUT: sidebar + main */
+.shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  min-height: calc(100vh - 72px); /* approx topbar height */
+}
+
+/* SIDEBAR (desktop visible) */
+.sidebar {
+  border-right: 1px solid #1a1a2e;
+  padding: 1.25rem;
+}
+
+.sideNav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.sideLink {
+  color: #b8b8b8;
+  text-decoration: none;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.sideLink:hover {
+  color: #e8e4d9;
+}
+
+/* MAIN */
 .main {
   width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+/* BURGER (hidden on desktop) */
+.burger {
+  display: none;
+  background: none;
+  border: 1px solid #1a1a2e;
+  color: #e8e4d9;
+  border-radius: 8px;
+  padding: 0.35rem 0.6rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+/* OVERLAY (mobile only) */
+.overlay {
+  display: none;
+}
+
+/* MOBILE: sidebar becomes drawer */
+@media (max-width: 900px) {
+  .topbar {
+    padding: 1rem;
+  }
+
+  .topbarRight {
+    gap: 1rem;
+  }
+
+  .shell {
+    grid-template-columns: 1fr;
+    min-height: calc(100vh - 64px);
+  }
+
+  .burger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    background: #0a0a0f;
+    transform: translateX(-110%);
+    transition: transform 0.2s ease;
+    z-index: 50;
+    border-right: 1px solid #1a1a2e;
+    padding: 1.25rem;
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    z-index: 40;
+  }
 }

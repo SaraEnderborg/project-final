@@ -29,6 +29,37 @@
   position: relative;
 }
 
+.layerControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0.75rem 0;
+  flex-wrap: wrap;
+}
+
+.select {
+  background: #0a0a0f;
+  border: 1px solid #1a1a2e;
+  color: #e8e4d9;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+}
+
+.controlLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: #b8b8b8;
+}
+
+.contInline {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: #b8b8b8;
+}
+
 .status {
   color: #333;
   font-family: "JetBrains Mono", monospace;
@@ -39,4 +70,12 @@
   color: #c0392b;
   font-family: "JetBrains Mono", monospace;
   font-size: 0.8rem;
+}
+
+@media (max-width: 600px) {
+  .layerControls {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
 }

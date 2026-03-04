@@ -14,5 +14,6 @@ export function useLayerEvents(layerId, params = {}) {
     queryKey: queryKeys.layerEvents(layerId, params),
     queryFn: () => fetchLayerEvents(layerId, params),
     enabled: !!layerId,
+    keepPreviousData: true,
   });
 }

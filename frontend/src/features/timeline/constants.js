@@ -20,12 +20,23 @@ export const LAYER_ACCENT = {
 };
 
 export const RANGE_START = new Date("1500-01-01").getTime();
-export const RANGE_END = new Date("2000-01-01").getTime();
+export const RANGE_END = new Date("2001-01-01").getTime();
 export const RANGE_SPAN = RANGE_END - RANGE_START;
 
-export function dateToPercent(date) {
+export function dateToPercent(
+  date,
+  rangeStart = RANGE_START,
+  rangeEnd = RANGE_END,
+) {
   const t = new Date(date).getTime();
-  return ((t - RANGE_START) / RANGE_SPAN) * 100;
+  const start = rangeStart instanceof Date ? rangeStart.getTime() : rangeStart;
+  const end = rangeEnd instanceof Date ? rangeEnd.getTime() : rangeEnd;
+
+  const span = end - start;
+  if (!Number.isFinite(t) || span <= 0) return 0;
+
+  const p = ((t - start) / span) * 100;
+  return Math.max(0, Math.min(100, p));
 }
 
 export function formatYear(date) {
