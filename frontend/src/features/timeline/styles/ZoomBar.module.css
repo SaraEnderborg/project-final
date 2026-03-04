@@ -1,0 +1,61 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.75rem 0 1rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.group {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: #b8b8b8;
+}
+
+.input {
+  background: #0a0a0f;
+  border: 1px solid #1a1a2e;
+  color: #e8e4d9;
+  font-size: 0.95rem;
+  caret-color: #e8e4d9;
+  padding: 0.45rem 0.6rem;
+  border-radius: 6px;
+  width: 7.5rem;
+  max-width: 100%;
+}
+
+.input:focus-visible {
+  outline: 3px solid rgba(232, 228, 217, 0.9);
+  outline-offset: 2px;
+}
+
+.reset {
+  background: transparent;
+  border: 1px solid #1a1a2e;
+  color: #e8e4d9;
+  padding: 0.45rem 0.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.reset:focus-visible {
+  outline: 3px solid rgba(232, 228, 217, 0.9);
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) {
+  .input {
+    width: 100%;
+  }
+}

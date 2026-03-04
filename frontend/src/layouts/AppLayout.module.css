@@ -98,7 +98,6 @@
   color: #e8e4d9;
 }
 
-/* MAIN */
 .main {
   width: 100%;
   max-width: 1200px;
@@ -108,7 +107,9 @@
 
 /* BURGER (hidden on desktop) */
 .burger {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: 1px solid #1a1a2e;
   color: #e8e4d9;
@@ -139,7 +140,6 @@
   }
 
   .burger {
-    display: inline-flex;
     align-items: center;
     justify-content: center;
   }
@@ -170,4 +170,16 @@
     border: none;
     z-index: 40;
   }
+}
+
+.shellCollapsed {
+  grid-template-columns: 72px 1fr;
+}
+
+.sidebarCollapsed {
+  padding: 1rem 0.75rem;
+}
+
+.sidebarContent {
+  margin-top: 1rem;
 }

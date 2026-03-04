@@ -3,14 +3,17 @@ import dotStyles from "../styles/EventDot.module.css";
 import styles from "../styles/TimelineRow.module.css";
 import { LAYER_ACCENT, CATEGORY_COLORS, dateToPercent } from "../constants";
 import EventDot from "./EventDot";
+import { useUiStore } from "../../../stores/uiStore";
 
-const CLUSTER_PX = 8; // lite tightare än 10 för att undvika mega-clusters
-const EXPLODE_DY = 12; // vertikalt varannan upp/ner
-const EXPLODE_DX = 10; // bara om flera har exakt samma x
-const MAX_EXPLODE = 60; // visa fler i explode
+const CLUSTER_PX = 8;
+const EXPLODE_DY = 12;
+const EXPLODE_DX = 10;
+const MAX_EXPLODE = 60;
+const CLUSTER_SEPARATION_PX = 18;
+const STAGGER_DY = 10;
 
-function getClusterColor(events) {
-  const cats = new Set(events.map((x) => x.event.category));
+function getClusterColor(items) {
+  const cats = new Set(items.map((x) => x.event.category));
   if (cats.size === 1) {
     const cat = [...cats][0];
     return CATEGORY_COLORS[cat] ?? "#888";
@@ -24,6 +27,25 @@ export default function TimelineRow({
   selectedEvent,
   onEventClick,
 }) {
+  const [rangeStartYear, rangeEndYear] = useUiStore((s) => s.yearRange);
+
+  const rangeStart = useMemo(
+    () => new Date(`${rangeStartYear}-01-01`),
+    [rangeStartYear],
+  );
+  const rangeEnd = useMemo(
+    () => new Date(`${rangeEndYear}-12-31`),
+    [rangeEndYear],
+  );
+
+  const visibleEvents = useMemo(() => {
+    if (!events?.length) return [];
+    return events.filter((e) => {
+      const d = new Date(e.startDate);
+      return d >= rangeStart && d <= rangeEnd;
+    });
+  }, [events, rangeStart, rangeEnd]);
+
   const accent = LAYER_ACCENT[layer.slug] ?? "#888";
   const trackRef = useRef(null);
 
@@ -40,33 +62,31 @@ export default function TimelineRow({
       setTrackWidth(Math.max(0, w - 20));
     };
 
-    const ro = new ResizeObserver(() => {
-      const w = el.getBoundingClientRect().width;
-      setTrackWidth(Math.max(0, w - 20));
-    });
-
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
-    setTrackWidth(el.getBoundingClientRect().width);
+    measure();
 
     return () => ro.disconnect();
   }, []);
 
   const clusters = useMemo(() => {
-    if (!events || events.length === 0) return [];
+    if (!visibleEvents || visibleEvents.length === 0) return [];
 
-    // If we can't measure yet, render singles (no clustering) to avoid weirdness
     if (!trackWidth) {
-      return events.map((e) => ({
-        key: e._id,
-        type: "single",
-        leftPercent: dateToPercent(e.startDate),
-        items: [{ event: e, leftPercent: dateToPercent(e.startDate) }],
-      }));
+      return visibleEvents.map((e) => {
+        const leftPercent = dateToPercent(e.startDate, rangeStart, rangeEnd);
+        return {
+          key: e._id,
+          type: "single",
+          leftPercent,
+          items: [{ event: e, leftPercent }],
+        };
+      });
     }
 
-    const items = events
+    const items = visibleEvents
       .map((e) => {
-        const leftPercent = dateToPercent(e.startDate);
+        const leftPercent = dateToPercent(e.startDate, rangeStart, rangeEnd);
         const xPx = (leftPercent / 100) * trackWidth;
         return { event: e, leftPercent, xPx };
       })
@@ -78,7 +98,6 @@ export default function TimelineRow({
 
     for (let i = 1; i < items.length; i++) {
       const curr = items[i];
-
       if (curr.xPx - groupStartX <= CLUSTER_PX) {
         group.push(curr);
       } else {
@@ -89,21 +108,37 @@ export default function TimelineRow({
     }
     groups.push(group);
 
-    return groups.map((g, idx) => {
-      const leftAvgPx = g.reduce((sum, it) => sum + it.xPx, 0) / g.length;
-      const leftPercent = (leftAvgPx / trackWidth) * 100;
+    return groups
+      .map((g, idx) => {
+        const leftAvgPx = g.reduce((sum, it) => sum + it.xPx, 0) / g.length;
+        const leftPercent = (leftAvgPx / trackWidth) * 100;
+        const key = `${layer._id}-${idx}-${Math.round(leftAvgPx)}-${g.length}`;
 
-      const key = `${layer._id}-${idx}-${Math.round(leftAvgPx)}-${g.length}`;
+        return {
+          key,
+          type: g.length === 1 ? "single" : "cluster",
+          leftPercent,
+          leftAvgPx,
+          items: g,
+        };
+      })
+      .map((c, i, arr) => {
+        if (c.type !== "cluster") return { ...c, staggerDy: 0 };
 
-      return {
-        key,
-        type: g.length === 1 ? "single" : "cluster",
-        leftPercent,
-        items: g,
-      };
-    });
-  }, [events, trackWidth, layer._id]);
+        const prev = arr[i - 1];
+        if (prev && prev.type === "cluster") {
+          const dx = Math.abs(c.leftAvgPx - prev.leftAvgPx);
+          if (dx < CLUSTER_SEPARATION_PX) {
+            const dir = i % 2 === 0 ? -1 : 1;
+            return { ...c, staggerDy: dir * STAGGER_DY };
+          }
+        }
 
+        return { ...c, staggerDy: 0 };
+      });
+  }, [visibleEvents, trackWidth, layer._id, rangeStart, rangeEnd]);
+
+  // Close explosion if cluster disappears
   useEffect(() => {
     if (!explodedKey) return;
     const stillExists = clusters.some(
@@ -134,10 +169,12 @@ export default function TimelineRow({
     <div className={styles.wrapper}>
       <div className={styles.label} style={{ "--accent": accent }}>
         {layer.name}
-        <span className={styles.count}>{events.length} events</span>
+        <span className={styles.count}>
+          {visibleEvents.length} / {events.length} events
+        </span>
       </div>
 
-      <div className={styles.track} ref={trackRef}>
+      <div className={`$styles.track} ${dotStyles.trackHover}`} ref={trackRef}>
         <div className={styles.centerLine} />
 
         {clusters.map((c) => {
@@ -155,11 +192,9 @@ export default function TimelineRow({
           }
 
           const isExploded = explodedKey === c.key;
-
           const clusterColor = getClusterColor(c.items);
           const count = c.items.length;
 
-          // sort for explode
           const explodedItems = c.items
             .slice()
             .sort((a, b) => a.xPx - b.xPx)
@@ -167,14 +202,13 @@ export default function TimelineRow({
 
           const hiddenCount = Math.max(0, count - explodedItems.length);
 
-          // cluster dot
           return (
             <div key={c.key}>
               <EventDot
                 event={{
                   _id: c.key,
                   title: `${count} events`,
-                  startDate: new Date(), // unused (leftOverride)
+                  startDate: new Date(),
                   category: "mixed",
                 }}
                 onClick={() => toggleExplode(c.key)}
@@ -187,8 +221,10 @@ export default function TimelineRow({
                 dataCount={count}
                 colorOverride={clusterColor}
                 leftOverride={c.leftPercent}
+                offset={{ dx: 0, dy: c.staggerDy ?? 0 }}
                 className={dotStyles.cluster}
               />
+
               {isExploded &&
                 explodedItems.map((it, i) => {
                   const sameX = explodedItems.filter(
@@ -203,7 +239,8 @@ export default function TimelineRow({
                     dx = Math.round((j - mid) * EXPLODE_DX);
                   }
 
-                  const dy = i % 2 === 0 ? -EXPLODE_DY : EXPLODE_DY;
+                  const baseDy = c.staggerDy ?? 0;
+                  const dy = baseDy + (i % 2 === 0 ? -EXPLODE_DY : EXPLODE_DY);
 
                   return (
                     <EventDot

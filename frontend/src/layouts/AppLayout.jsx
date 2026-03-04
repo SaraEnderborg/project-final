@@ -1,3 +1,5 @@
+import { useLayers } from "../features/layers/hooks";
+import TimelineControls from "../features/timeline/components/TimelineControls";
 import { Outlet, Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
@@ -7,6 +9,10 @@ export default function AppLayout() {
   const { user, logout, isAuthenticated } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 900);
+  const { data: layersData } = useLayers();
+  const layers = layersData ?? [];
+
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 900);
@@ -22,9 +28,12 @@ export default function AppLayout() {
       <header className={styles.topbar}>
         <button
           className={styles.burger}
-          onClick={() => setIsSidebarOpen((v) => !v)}
+          onClick={() => {
+            if (isMobile) setIsSidebarOpen((v) => !v);
+            else setIsSidebarCollapsed((v) => !v);
+          }}
           aria-label={isSidebarOpen ? "Close menu" : "Open menu"}
-          aria-expanded={isSidebarOpen}
+          aria-expanded={isMobile ? isSidebarOpen : !isSidebarCollapsed}
           aria-controls="sidebar"
         >
           ☰
@@ -72,13 +81,17 @@ export default function AppLayout() {
         />
       )}
 
-      <div className={styles.shell}>
+      <div
+        className={`${styles.shell} ${
+          !isMobile && isSidebarCollapsed ? styles.shellCollapsed : ""
+        }`}
+      >
         {/* Sidebar */}
         <aside
           id="sidebar"
           className={`${styles.sidebar} ${
-            isSidebarOpen ? styles.sidebarOpen : ""
-          }`}
+            isMobile && isSidebarOpen ? styles.sidebarOpen : ""
+          } ${!isMobile && isSidebarCollapsed ? styles.sidebarCollapsed : ""}`}
           aria-hidden={isMobile ? !isSidebarOpen : undefined}
         >
           <nav className={styles.sideNav}>
@@ -86,6 +99,18 @@ export default function AppLayout() {
               Timeline
             </Link>
           </nav>
+
+          {!isMobile && !isSidebarCollapsed && (
+            <div className={styles.sidebarContent}>
+              <TimelineControls layers={layers} />
+            </div>
+          )}
+
+          {isMobile && isSidebarOpen && (
+            <div className={styles.sidebarContent}>
+              <TimelineControls layers={layers} />
+            </div>
+          )}
         </aside>
 
         {/* Main */}

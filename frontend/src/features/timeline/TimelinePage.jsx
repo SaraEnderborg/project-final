@@ -1,11 +1,11 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLayers } from "../layers/hooks";
 import { useLayerEvents } from "../layers/hooks";
-import LayerSelector from "./components/LayerSelector";
 import TimelineRow from "./components/TimelineRow";
 import YearAxis from "./components/YearAxis";
 import EventPanel from "./components/EventPanel";
 import styles from "./styles/TimelinePage.module.css";
+import { useUiStore } from "../../stores/uiStore";
 
 function ActiveLayer({
   layerId,
@@ -13,7 +13,6 @@ function ActiveLayer({
   selectedEvent,
   onEventClick,
   category,
-  onCategoryChange,
 }) {
   const layer = layers.find((l) => l._id === layerId);
 
@@ -29,35 +28,8 @@ function ActiveLayer({
   if (isError)
     return <p className={styles.statusError}>Failed to load {layer.name}</p>;
 
-  const selectId = `category-select-${layerId}`;
-
   return (
     <>
-      <div className={styles.layerControls}>
-        <label className={styles.controlLabel} htmlFor={selectId}>
-          Category
-        </label>
-
-        <select
-          id={selectId}
-          className={styles.select}
-          value={category ?? ""}
-          onChange={(e) => onCategoryChange(layerId, e.target.value)}
-        >
-          <option value="">All</option>
-          {(layer.categories ?? []).map((cat) => (
-            <option key={cat} value={cat}>
-              {cat.replace(/_/g, " ")}
-            </option>
-          ))}
-        </select>
-
-        <span className={styles.contInline}>
-          {data?.events?.length ?? 0} events
-        </span>
-      </div>
-
-      {/* TIMELINE */}
       <TimelineRow
         layer={layer}
         events={data?.events ?? []}
@@ -70,40 +42,26 @@ function ActiveLayer({
 
 export default function TimelinePage() {
   const { data: layersData, isLoading, isError } = useLayers();
-  const [selectedLayerIds, setSelectedLayerIds] = useState([]);
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [categoryByLayerId, setCategoryByLayerId] = useState({});
-
   const layers = layersData ?? [];
 
+  const selectedLayerIds = useUiStore((s) => s.selectedLayerIds);
+  const categoryByLayerId = useUiStore((s) => s.categoryByLayerId);
+  const [startYear, endYear] = useUiStore((s) => s.yearRange);
+
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
+  // Default-select first layer once layers have loaded
   useEffect(() => {
     if (layers.length > 0 && selectedLayerIds.length === 0) {
-      setSelectedLayerIds([layers[0]._id]);
+      // Use store setter logic (toggle first layer)
+      //  avoid importing toggleLayer here by using setState directly:
+      // simplest: just set it in store via setState
+      useUiStore.setState({ selectedLayerIds: [layers[0]._id] });
     }
   }, [layers, selectedLayerIds.length]);
 
-  const handleToggleLayer = useCallback((id) => {
-    setSelectedLayerIds((prev) => {
-      if (prev.includes(id)) {
-        setCategoryByLayerId((cats) => {
-          const next = { ...cats };
-          delete next[id];
-          return next;
-        });
-        return prev.filter((x) => x !== id);
-      }
-
-      if (prev.length >= 2) return [...prev.slice(1), id];
-      return [...prev, id];
-    });
-  }, []);
-
   const handleEventClick = useCallback((event) => {
     setSelectedEvent((prev) => (prev?._id === event._id ? null : event));
-  }, []);
-
-  const handleCategoryChange = useCallback((layerId, value) => {
-    setCategoryByLayerId((prev) => ({ ...prev, [layerId]: value || null }));
   }, []);
 
   if (isLoading) return <p className={styles.status}>Loading layers...</p>;
@@ -114,20 +72,16 @@ export default function TimelinePage() {
     <div className={`${styles.page} ${styles.safeWrap}`}>
       <div className={styles.header}>
         <h1 className={styles.title}>Historical Timeline</h1>
-        <p className={styles.subtitle}>Europe · 1500–2000</p>
-      </div>
-
-      <div className={styles.layerSelector}>
-        <LayerSelector
-          layers={layers}
-          selectedIds={selectedLayerIds}
-          onToggle={handleToggleLayer}
-        />
+        <p className={styles.subtitle}>
+          Europe · {startYear}–{endYear}
+        </p>
       </div>
 
       <div className={styles.timeline}>
         {selectedLayerIds.length === 0 && (
-          <p className={styles.status}>Select a layer above to begin.</p>
+          <p className={styles.status}>
+            Select a layer in the sidebar to begin.
+          </p>
         )}
 
         {selectedLayerIds.map((id) => (
@@ -138,7 +92,6 @@ export default function TimelinePage() {
             selectedEvent={selectedEvent}
             onEventClick={handleEventClick}
             category={categoryByLayerId[id] ?? ""}
-            onCategoryChange={handleCategoryChange}
           />
         ))}
 
