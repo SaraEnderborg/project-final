@@ -1,4 +1,7 @@
+import dotenv from "dotenv";
 import mongoose from "mongoose";
+
+dotenv.config({ path: new URL("../../.env", import.meta.url), quiet: true });
 
 export async function runImport({
   importFn,

@@ -6,7 +6,6 @@ import buildEpidemicsQuery from "../../integrations/wikidata/queries/medicine/ep
 import buildVaccinesQuery from "../../integrations/wikidata/queries/medicine/vaccines.query.js";
 import buildMedicalDiscoveriesQuery from "../../integrations/wikidata/queries/medicine/medicalDiscoveries.query.js";
 import buildPublicHealthQuery from "../../integrations/wikidata/queries/medicine/publicHealth.query.js";
-//import buildHospitalsQuery from "../../integrations/wikidata/queries/medicine/hospitals.query.js";
 import buildGermTheoryQuery from "../../integrations/wikidata/queries/medicine/germTheory.query.js";
 
 import { buildEventDoc } from "../../integrations/wikidata/mappers/_mapperUtils.js";
@@ -202,10 +201,6 @@ export async function runMedicineImport({ dryRun = false } = {}) {
     {
       category: "public_health_reforms",
       buildQuery: buildPublicHealthQuery,
-    },
-    {
-      // category: "hospital_systems",
-      // buildQuery: buildHospitalsQuery,
     },
     {
       category: "germ_theory_bacteriology",

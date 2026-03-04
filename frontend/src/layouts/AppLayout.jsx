@@ -1,5 +1,3 @@
-// frontend/src/layouts/AppLayout.jsx
-
 import { Outlet, Link } from "react-router-dom";
 import { useAuthStore } from "../stores/authStore";
 import styles from "./AppLayout.module.css";

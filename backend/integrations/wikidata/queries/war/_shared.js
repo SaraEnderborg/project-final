@@ -1,82 +1,32 @@
-export function formatDate(date) {
-  return date.toISOString().split("T")[0];
-}
+export {
+  formatDate,
+  basePrefixes,
+  baseSelect,
+  baseEuropeFilter,
+  baseDates,
+  baseWikipedia,
+} from "../_shared.js";
 
-export function prefixes() {
-  return `
-PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-PREFIX schema: <http://schema.org/>
-  `.trim();
-}
+// Backwards-compatible aliases (så gamla war queries fortsätter funka)
+export { basePrefixes as prefixes } from "../_shared.js";
+export { baseSelect as selectBase } from "../_shared.js";
+export { baseEuropeFilter as europeFilter } from "../_shared.js";
+export { baseDates as dateFilterP580 } from "../_shared.js";
+export { baseWikipedia as wikipediaAndLabels } from "../_shared.js";
 
-export function selectBase() {
-  return `
-SELECT DISTINCT
-  ?event ?eventLabel ?eventDescription
-  ?startDate ?endDate
-  ?countryLabel ?locationLabel
-  ?article
-WHERE {
-  `.trim();
-}
-
-export function europeFilter() {
-  return `
-  {
-    ?event wdt:P17 ?country .
-    ?country wdt:P30 wd:Q46 .
-  } UNION {
-    ?event wdt:P276 ?location .
-    ?location wdt:P30 wd:Q46 .
-  } UNION {
-    ?event wdt:P30 wd:Q46 .
-  }
-
-  OPTIONAL { ?event wdt:P17 ?country . }
-  OPTIONAL { ?event wdt:P276 ?location . }
-  `.trim();
-}
-
-export function dateFilterP580(from, to) {
-  return `
-  ?event wdt:P580 ?startDate .
-
-  FILTER(?startDate >= "${from}"^^xsd:dateTime)
-  FILTER(?startDate <= "${to}"^^xsd:dateTime)
-
-  OPTIONAL { ?event wdt:P582 ?endDate . }
-  `.trim();
-}
-
+// War-specific helper (used by e.g. militaryAlliances.query.js)
 export function dateFilterAlliance(from, to) {
-  // Alliances/treaties often use inception (P571) or point-in-time (P585) instead of P580.
   return `
   {
-    ?event wdt:P580 ?startDate .
+    ?event wdt:P571 ?startDate .   # inception
   } UNION {
-    ?event wdt:P571 ?startDate .
-  } UNION {
-    ?event wdt:P585 ?startDate .
+    ?event wdt:P580 ?startDate .   # start time (fallback)
   }
 
   FILTER(?startDate >= "${from}"^^xsd:dateTime)
   FILTER(?startDate <= "${to}"^^xsd:dateTime)
 
-  OPTIONAL { ?event wdt:P582 ?endDate . }
-  `.trim();
-}
-
-export function wikipediaAndLabels() {
-  return `
-  OPTIONAL {
-    ?article schema:about ?event .
-    ?article schema:inLanguage "en" .
-    FILTER(STRSTARTS(STR(?article), "https://en.wikipedia.org/"))
-  }
-
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
-}
-ORDER BY ?startDate
-LIMIT 2000
+  OPTIONAL { ?event wdt:P576 ?endDate . }  # dissolved/abolished
+  OPTIONAL { ?event wdt:P582 ?endDate . }  # end time (fallback)
   `.trim();
 }

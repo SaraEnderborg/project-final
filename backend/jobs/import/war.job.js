@@ -155,13 +155,27 @@ export async function runWarImport({ dryRun = false } = {}) {
 
   const results = [];
   for (const t of tasks) {
-    const r = await importCategory({
-      layer,
-      category: t.category,
-      buildQuery: t.buildQuery,
-      dryRun,
-    });
-    results.push(r);
+    try {
+      const r = await importCategory({
+        layer,
+        category: t.category,
+        buildQuery: t.buildQuery,
+        dryRun,
+      });
+      results.push(r);
+    } catch (err) {
+      console.log(
+        `Skipping category ${t.category} due to error: ${err.message}`,
+      );
+      results.push({
+        category: t.category,
+        total: 0,
+        mapped: 0,
+        upserted: 0,
+        modified: 0,
+        error: err.message,
+      });
+    }
   }
 
   const summary = results.reduce(
