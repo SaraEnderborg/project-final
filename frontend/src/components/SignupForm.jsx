@@ -6,7 +6,6 @@ const SignupForm = ({ handleLogin }) => {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [formData, setFormData] = useState({
-    username: "",
     email: "",
     password: "",
   });
@@ -36,14 +35,12 @@ const SignupForm = ({ handleLogin }) => {
       }
 
       handleLogin(resJson.response);
-      setFormData({ username: "", email: "", password: "" });
+      setFormData({ email: "", password: "" });
     } catch (error) {
       const message = error.message || "Signup failed";
 
       if (message.toLowerCase().includes("email")) {
         setFieldErrors({ email: message });
-      } else if (message.toLowerCase().includes("username")) {
-        setFieldErrors({ username: message });
       } else if (message.toLowerCase().includes("password")) {
         setFieldErrors({ password: message });
       } else {
@@ -62,16 +59,6 @@ const SignupForm = ({ handleLogin }) => {
   return (
     <form onSubmit={handleSubmit}>
       <h2>Sign Up</h2>
-
-      <FormField
-        label="Username"
-        name="username"
-        value={formData.username}
-        onChange={handleChange}
-        autoComplete="username"
-        required
-        error={fieldErrors.username}
-      />
 
       <FormField
         label="Email"

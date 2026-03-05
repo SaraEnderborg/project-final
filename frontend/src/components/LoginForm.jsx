@@ -33,8 +33,8 @@ const LoginForm = ({ handleLogin }) => {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
+      if (!response.ok || !data?.success) {
+        throw new Error(data?.message || "Login failed");
       }
 
       handleLogin(data.response);
