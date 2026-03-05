@@ -59,3 +59,35 @@
     width: 100%;
   }
 }
+
+.zoomLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: #b8b8b8;
+  min-width: 0;
+}
+
+.zoomSlider {
+  width: 10rem;
+  max-width: 100%;
+}
+
+.zoomValue {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: rgba(232, 228, 217, 0.7);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .zoomLabel {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .zoomSlider {
+    width: 100%;
+  }
+}

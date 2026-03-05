@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { useLayers } from "../layers/hooks";
-import { useLayerEvents } from "../layers/hooks";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useLayers, useLayerEvents } from "../layers/hooks";
 import TimelineRow from "./components/TimelineRow";
 import YearAxis from "./components/YearAxis";
 import EventPanel from "./components/EventPanel";
@@ -29,14 +28,12 @@ function ActiveLayer({
     return <p className={styles.statusError}>Failed to load {layer.name}</p>;
 
   return (
-    <>
-      <TimelineRow
-        layer={layer}
-        events={data?.events ?? []}
-        selectedEvent={selectedEvent}
-        onEventClick={onEventClick}
-      />
-    </>
+    <TimelineRow
+      layer={layer}
+      events={data?.events ?? []}
+      selectedEvent={selectedEvent}
+      onEventClick={onEventClick}
+    />
   );
 }
 
@@ -50,12 +47,36 @@ export default function TimelinePage() {
 
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // Default-select first layer once layers have loaded
+  const axisRef = useRef(null);
+  const rowsRef = useRef(null);
+
+  // Sync scroll between axis and timeline
+  useEffect(() => {
+    const axis = axisRef.current;
+    const rows = rowsRef.current;
+
+    if (!axis || !rows) return;
+
+    const onAxisScroll = () => {
+      rows.scrollLeft = axis.scrollLeft;
+    };
+
+    const onRowsScroll = () => {
+      axis.scrollLeft = rows.scrollLeft;
+    };
+
+    axis.addEventListener("scroll", onAxisScroll);
+    rows.addEventListener("scroll", onRowsScroll);
+
+    return () => {
+      axis.removeEventListener("scroll", onAxisScroll);
+      rows.removeEventListener("scroll", onRowsScroll);
+    };
+  }, []);
+
+  // Default first layer
   useEffect(() => {
     if (layers.length > 0 && selectedLayerIds.length === 0) {
-      // Use store setter logic (toggle first layer)
-      //  avoid importing toggleLayer here by using setState directly:
-      // simplest: just set it in store via setState
       useUiStore.setState({ selectedLayerIds: [layers[0]._id] });
     }
   }, [layers, selectedLayerIds.length]);
@@ -65,6 +86,7 @@ export default function TimelinePage() {
   }, []);
 
   if (isLoading) return <p className={styles.status}>Loading layers...</p>;
+
   if (isError)
     return <p className={styles.statusError}>Failed to load layers.</p>;
 
@@ -77,7 +99,8 @@ export default function TimelinePage() {
         </p>
       </div>
 
-      <div className={styles.timeline}>
+      {/* Timeline rows container */}
+      <div className={styles.timeline} ref={rowsRef}>
         {selectedLayerIds.length === 0 && (
           <p className={styles.status}>
             Select a layer in the sidebar to begin.
@@ -94,7 +117,10 @@ export default function TimelinePage() {
             category={categoryByLayerId[id] ?? ""}
           />
         ))}
+      </div>
 
+      {/* Year axis */}
+      <div ref={axisRef}>
         <YearAxis />
       </div>
 

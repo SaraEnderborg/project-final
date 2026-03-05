@@ -22,15 +22,22 @@
 
 .track {
   position: relative;
-  height: 84px;
-  padding: 0 10px;
+  height: 110px;
+  padding: 12px 10px;
   background: #0f0f1a;
   border: 1px solid #1a1a2e;
   border-radius: 4px;
-  overflow: hidden;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+
+  overflow-x: auto;
+  overflow-y: visible;
+
+  scroll-behavior: auto;
+}
+
+.canvas {
+  position: relative;
+  height: 100%;
+  min-width: 100%;
 }
 
 .centerLine {
@@ -40,6 +47,7 @@
   right: 10px;
   height: 1px;
   background: rgba(232, 228, 217, 0.12);
+  transform: translateY(-1px);
 }
 
 /* subtle layer glow */

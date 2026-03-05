@@ -11,6 +11,9 @@ export default function ZoomBar({ minYear = 1500, maxYear = 2000 }) {
   const [start, end] = useUiStore((s) => s.yearRange);
   const setYearRange = useUiStore((s) => s.setYearRange);
   const resetYearRange = useUiStore((s) => s.resetYearRange);
+  const visualZoom = useUiStore((s) => s.visualZoom);
+  const setVisualZoom = useUiStore((s) => s.setVisualZoom);
+  const resetVisualZoom = useUiStore((s) => s.resetVisualZoom);
 
   // draft strings so typing feels normal
   const [draftStart, setDraftStart] = useState(String(start));
@@ -73,11 +76,26 @@ export default function ZoomBar({ minYear = 1500, maxYear = 2000 }) {
         </label>
       </div>
 
+      <label className={styles.zoomLabel}>
+        Visual zoom
+        <input
+          className={styles.zoomSlider}
+          type="range"
+          min="1"
+          max="4"
+          step="0.25"
+          value={visualZoom}
+          onChange={(e) => setVisualZoom(Number(e.target.value))}
+        />
+        <span className={styles.zoomValue}>{visualZoom.toFixed(2)}×</span>
+      </label>
+
       <button
         type="button"
         className={styles.reset}
         onClick={() => {
           resetYearRange();
+          +resetVisualZoom();
         }}
       >
         Reset

@@ -28,11 +28,13 @@ export default function TimelineRow({
   onEventClick,
 }) {
   const [rangeStartYear, rangeEndYear] = useUiStore((s) => s.yearRange);
+  const visualZoom = useUiStore((s) => s.visualZoom);
 
   const rangeStart = useMemo(
     () => new Date(`${rangeStartYear}-01-01`),
     [rangeStartYear],
   );
+
   const rangeEnd = useMemo(
     () => new Date(`${rangeEndYear}-12-31`),
     [rangeEndYear],
@@ -47,6 +49,7 @@ export default function TimelineRow({
   }, [events, rangeStart, rangeEnd]);
 
   const accent = LAYER_ACCENT[layer.slug] ?? "#888";
+
   const trackRef = useRef(null);
 
   const [trackWidth, setTrackWidth] = useState(0);
@@ -69,10 +72,14 @@ export default function TimelineRow({
     return () => ro.disconnect();
   }, []);
 
+  const canvasWidth = useMemo(() => {
+    return trackWidth ? Math.round(trackWidth * Math.max(1, visualZoom)) : 0;
+  }, [trackWidth, visualZoom]);
+
   const clusters = useMemo(() => {
     if (!visibleEvents || visibleEvents.length === 0) return [];
 
-    if (!trackWidth) {
+    if (!canvasWidth) {
       return visibleEvents.map((e) => {
         const leftPercent = dateToPercent(e.startDate, rangeStart, rangeEnd);
         return {
@@ -87,17 +94,20 @@ export default function TimelineRow({
     const items = visibleEvents
       .map((e) => {
         const leftPercent = dateToPercent(e.startDate, rangeStart, rangeEnd);
-        const xPx = (leftPercent / 100) * trackWidth;
+        const xPx = (leftPercent / 100) * canvasWidth;
+
         return { event: e, leftPercent, xPx };
       })
       .sort((a, b) => a.xPx - b.xPx);
 
     const groups = [];
+
     let group = [items[0]];
     let groupStartX = items[0].xPx;
 
     for (let i = 1; i < items.length; i++) {
       const curr = items[i];
+
       if (curr.xPx - groupStartX <= CLUSTER_PX) {
         group.push(curr);
       } else {
@@ -106,12 +116,15 @@ export default function TimelineRow({
         groupStartX = curr.xPx;
       }
     }
+
     groups.push(group);
 
     return groups
       .map((g, idx) => {
         const leftAvgPx = g.reduce((sum, it) => sum + it.xPx, 0) / g.length;
-        const leftPercent = (leftAvgPx / trackWidth) * 100;
+
+        const leftPercent = (leftAvgPx / canvasWidth) * 100;
+
         const key = `${layer._id}-${idx}-${Math.round(leftAvgPx)}-${g.length}`;
 
         return {
@@ -126,24 +139,28 @@ export default function TimelineRow({
         if (c.type !== "cluster") return { ...c, staggerDy: 0 };
 
         const prev = arr[i - 1];
+
         if (prev && prev.type === "cluster") {
           const dx = Math.abs(c.leftAvgPx - prev.leftAvgPx);
+
           if (dx < CLUSTER_SEPARATION_PX) {
             const dir = i % 2 === 0 ? -1 : 1;
+
             return { ...c, staggerDy: dir * STAGGER_DY };
           }
         }
 
         return { ...c, staggerDy: 0 };
       });
-  }, [visibleEvents, trackWidth, layer._id, rangeStart, rangeEnd]);
+  }, [visibleEvents, canvasWidth, layer._id, rangeStart, rangeEnd]);
 
-  // Close explosion if cluster disappears
   useEffect(() => {
     if (!explodedKey) return;
+
     const stillExists = clusters.some(
       (c) => c.key === explodedKey && c.type === "cluster",
     );
+
     if (!stillExists) setExplodedKey(null);
   }, [clusters, explodedKey]);
 
@@ -151,17 +168,21 @@ export default function TimelineRow({
     setExplodedKey((prev) => (prev === key ? null : key));
   }, []);
 
-  // Click outside closes explosion
   useEffect(() => {
     if (!explodedKey) return;
 
     const onDocMouseDown = (e) => {
       const trackEl = trackRef.current;
+
       if (!trackEl) return;
-      if (!trackEl.contains(e.target)) setExplodedKey(null);
+
+      if (!trackEl.contains(e.target)) {
+        setExplodedKey(null);
+      }
     };
 
     document.addEventListener("mousedown", onDocMouseDown);
+
     return () => document.removeEventListener("mousedown", onDocMouseDown);
   }, [explodedKey]);
 
@@ -169,112 +190,127 @@ export default function TimelineRow({
     <div className={styles.wrapper}>
       <div className={styles.label} style={{ "--accent": accent }}>
         {layer.name}
+
         <span className={styles.count}>
           {visibleEvents.length} / {events.length} events
         </span>
       </div>
 
-      <div className={`$styles.track} ${dotStyles.trackHover}`} ref={trackRef}>
-        <div className={styles.centerLine} />
+      <div className={`${styles.track} ${dotStyles.trackHover}`} ref={trackRef}>
+        <div
+          className={styles.canvas}
+          style={{ width: canvasWidth ? `${canvasWidth}px` : "100%" }}
+        >
+          <div className={styles.centerLine} />
 
-        {clusters.map((c) => {
-          if (c.type === "single") {
-            const it = c.items[0];
+          {clusters.map((c) => {
+            if (c.type === "single") {
+              const it = c.items[0];
+
+              return (
+                <EventDot
+                  key={it.event._id}
+                  event={it.event}
+                  onClick={onEventClick}
+                  isSelected={selectedEvent?._id === it.event._id}
+                  leftOverride={it.leftPercent}
+                />
+              );
+            }
+
+            const isExploded = explodedKey === c.key;
+
+            const clusterColor = getClusterColor(c.items);
+
+            const count = c.items.length;
+
+            const explodedItems = c.items
+              .slice()
+              .sort((a, b) => a.xPx - b.xPx)
+              .slice(0, MAX_EXPLODE);
+
+            const hiddenCount = Math.max(0, count - explodedItems.length);
+
             return (
-              <EventDot
-                key={it.event._id}
-                event={it.event}
-                onClick={onEventClick}
-                isSelected={selectedEvent?._id === it.event._id}
-                leftOverride={it.leftPercent}
-              />
-            );
-          }
-
-          const isExploded = explodedKey === c.key;
-          const clusterColor = getClusterColor(c.items);
-          const count = c.items.length;
-
-          const explodedItems = c.items
-            .slice()
-            .sort((a, b) => a.xPx - b.xPx)
-            .slice(0, MAX_EXPLODE);
-
-          const hiddenCount = Math.max(0, count - explodedItems.length);
-
-          return (
-            <div key={c.key}>
-              <EventDot
-                event={{
-                  _id: c.key,
-                  title: `${count} events`,
-                  startDate: new Date(),
-                  category: "mixed",
-                }}
-                onClick={() => toggleExplode(c.key)}
-                isSelected={false}
-                title={
-                  isExploded
-                    ? "Click to collapse"
-                    : `${count} events (click to expand)`
-                }
-                dataCount={count}
-                colorOverride={clusterColor}
-                leftOverride={c.leftPercent}
-                offset={{ dx: 0, dy: c.staggerDy ?? 0 }}
-                className={dotStyles.cluster}
-              />
-
-              {isExploded &&
-                explodedItems.map((it, i) => {
-                  const sameX = explodedItems.filter(
-                    (x) => Math.abs(x.xPx - it.xPx) < 0.5,
-                  );
-                  let dx = 0;
-                  if (sameX.length > 1) {
-                    const j = sameX.findIndex(
-                      (x) => x.event._id === it.event._id,
-                    );
-                    const mid = (sameX.length - 1) / 2;
-                    dx = Math.round((j - mid) * EXPLODE_DX);
-                  }
-
-                  const baseDy = c.staggerDy ?? 0;
-                  const dy = baseDy + (i % 2 === 0 ? -EXPLODE_DY : EXPLODE_DY);
-
-                  return (
-                    <EventDot
-                      key={it.event._id}
-                      event={it.event}
-                      onClick={onEventClick}
-                      isSelected={selectedEvent?._id === it.event._id}
-                      leftOverride={it.leftPercent}
-                      offset={{ dx, dy }}
-                    />
-                  );
-                })}
-
-              {isExploded && hiddenCount > 0 && (
+              <div key={c.key}>
                 <EventDot
                   event={{
-                    _id: `${c.key}-more`,
-                    title: `+${hiddenCount} more`,
+                    _id: c.key,
+                    title: `${count} events`,
                     startDate: new Date(),
                     category: "mixed",
                   }}
-                  onClick={() => {}}
+                  onClick={() => toggleExplode(c.key)}
                   isSelected={false}
-                  title={`+${hiddenCount} more (increase MAX_EXPLODE to show)`}
-                  dataCount={`+${hiddenCount}`}
-                  colorOverride={"#777"}
+                  title={
+                    isExploded
+                      ? "Click to collapse"
+                      : `${count} events (click to expand)`
+                  }
+                  dataCount={count}
+                  colorOverride={clusterColor}
                   leftOverride={c.leftPercent}
-                  offset={{ dx: 0, dy: -28 }}
+                  offset={{ dx: 0, dy: c.staggerDy ?? 0 }}
                   className={dotStyles.cluster}
                 />
-              )}
-            </div>
-          );
-        })}
+
+                {isExploded &&
+                  explodedItems.map((it, i) => {
+                    const sameX = explodedItems.filter(
+                      (x) => Math.abs(x.xPx - it.xPx) < 0.5,
+                    );
+
+                    let dx = 0;
+
+                    if (sameX.length > 1) {
+                      const j = sameX.findIndex(
+                        (x) => x.event._id === it.event._id,
+                      );
+
+                      const mid = (sameX.length - 1) / 2;
+
+                      dx = Math.round((j - mid) * EXPLODE_DX);
+                    }
+
+                    const baseDy = c.staggerDy ?? 0;
+
+                    const dy =
+                      baseDy + (i % 2 === 0 ? -EXPLODE_DY : EXPLODE_DY);
+
+                    return (
+                      <EventDot
+                        key={it.event._id}
+                        event={it.event}
+                        onClick={onEventClick}
+                        isSelected={selectedEvent?._id === it.event._id}
+                        leftOverride={it.leftPercent}
+                        offset={{ dx, dy }}
+                      />
+                    );
+                  })}
+
+                {isExploded && hiddenCount > 0 && (
+                  <EventDot
+                    event={{
+                      _id: `${c.key}-more`,
+                      title: `+${hiddenCount} more`,
+                      startDate: new Date(),
+                      category: "mixed",
+                    }}
+                    onClick={() => {}}
+                    isSelected={false}
+                    title={`+${hiddenCount} more`}
+                    dataCount={`+${hiddenCount}`}
+                    colorOverride={"#777"}
+                    leftOverride={c.leftPercent}
+                    offset={{ dx: 0, dy: -28 }}
+                    className={dotStyles.cluster}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
