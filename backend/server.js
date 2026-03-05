@@ -4,6 +4,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import userRoutes from "./routes/userRoutes.js";
 import layersRoutes from "./api/layers/layers.routes.js";
+import SavedTimelineRoutes from "./routes/savedTimelineRoutes.js";
 import listEndPoints from "express-list-endpoints";
 
 const mongoUri = process.env.MONGO_URI;
@@ -24,6 +25,7 @@ app.use(express.json());
 
 // routes
 app.use("/users", userRoutes);
+app.use("/api/saved-timelines", SavedTimelineRoutes);
 app.use("/api/layers", layersRoutes);
 
 const endpoints = listEndPoints(app);

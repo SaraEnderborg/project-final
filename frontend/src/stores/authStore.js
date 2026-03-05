@@ -9,10 +9,15 @@ export const useAuthStore = create(
 
       isAuthenticated: () => !!get().accessToken,
 
-      setAuth: ({ user, accessToken }) =>
+      setAuth: (payload) =>
         set({
-          user: user ?? null,
-          accessToken: accessToken ?? null,
+          user: payload
+            ? {
+                email: payload.email ?? null,
+                userId: payload.userId ?? null,
+              }
+            : null,
+          accessToken: payload?.accessToken ?? null,
         }),
 
       logout: () =>
