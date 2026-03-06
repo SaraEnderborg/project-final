@@ -2,7 +2,7 @@
   position: relative;
   height: 32px;
   margin-top: 0.75rem;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: hidden;
   scroll-behavior: auto;
 }

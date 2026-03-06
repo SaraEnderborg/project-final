@@ -54,22 +54,12 @@ export default function TimelinePage() {
   useEffect(() => {
     const axis = axisRef.current;
     const rows = rowsRef.current;
-
     if (!axis || !rows) return;
-
-    const onAxisScroll = () => {
-      rows.scrollLeft = axis.scrollLeft;
-    };
-
     const onRowsScroll = () => {
       axis.scrollLeft = rows.scrollLeft;
     };
-
-    axis.addEventListener("scroll", onAxisScroll);
     rows.addEventListener("scroll", onRowsScroll);
-
     return () => {
-      axis.removeEventListener("scroll", onAxisScroll);
       rows.removeEventListener("scroll", onRowsScroll);
     };
   }, []);
@@ -120,7 +110,7 @@ export default function TimelinePage() {
       </div>
 
       {/* Year axis */}
-      <div ref={axisRef}>
+      <div ref={axisRef} style={{ overflowX: "hidden" }}>
         <YearAxis />
       </div>
 

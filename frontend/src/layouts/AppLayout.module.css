@@ -34,7 +34,7 @@
 }
 
 .navLink {
-  color: #555;
+  color: #a0a0a0;
   text-decoration: none;
   font-size: 0.75rem;
   letter-spacing: 0.1em;
@@ -47,14 +47,14 @@
 }
 
 .userEmail {
-  color: #333;
+  color: #888;
   font-size: 0.75rem;
 }
 
 .logoutBtn {
   background: none;
   border: none;
-  color: #555;
+  color: #a0a0a0;
   cursor: pointer;
   font-family: "JetBrains Mono", monospace;
   font-size: 0.75rem;
@@ -79,6 +79,7 @@
 .sidebar {
   border-right: 1px solid #1a1a2e;
   padding: 1.25rem;
+  box-sizing: border-box;
 }
 
 .sideNav {

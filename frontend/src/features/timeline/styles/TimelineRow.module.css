@@ -27,10 +27,8 @@
   background: #0f0f1a;
   border: 1px solid #1a1a2e;
   border-radius: 4px;
-
-  overflow-x: auto;
+  overflow-x: visible;
   overflow-y: visible;
-
   scroll-behavior: auto;
 }
 
