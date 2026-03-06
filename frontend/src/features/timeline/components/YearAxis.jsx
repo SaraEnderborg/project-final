@@ -43,14 +43,23 @@ export default function YearAxis() {
         className={styles.canvas}
         style={{ width: canvasWidth ? `${canvasWidth}px` : "100%" }}
       >
-        {ticks.map((y) => {
+        {ticks.map((y, index) => {
           const leftPx = ((y - startYear) / span) * canvasWidth;
+          const isFirst = index === 0;
+          const isLast = index === ticks.length - 1;
+
+          let transform = "translateX(-50%)";
+          if (isFirst) transform = "translateX(0)";
+          if (isLast) transform = "translateX(-100%)";
 
           return (
             <div
               key={y}
               className={styles.tick}
-              style={{ left: `${leftPx}px` }}
+              style={{
+                left: `${leftPx}px`,
+                transform,
+              }}
             >
               <div className={styles.line} />
               <span className={styles.label}>{y}</span>

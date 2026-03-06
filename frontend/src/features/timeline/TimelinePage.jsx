@@ -14,19 +14,14 @@ function ActiveLayer({
   category,
 }) {
   const layer = layers.find((l) => l._id === layerId);
-
   const { data, isLoading, isError } = useLayerEvents(layerId, {
     category: category || undefined,
   });
-
   if (!layer) return null;
-
   if (isLoading)
     return <p className={styles.status}>Loading {layer.name}...</p>;
-
   if (isError)
     return <p className={styles.statusError}>Failed to load {layer.name}</p>;
-
   return (
     <TimelineRow
       layer={layer}
@@ -40,31 +35,12 @@ function ActiveLayer({
 export default function TimelinePage() {
   const { data: layersData, isLoading, isError } = useLayers();
   const layers = layersData ?? [];
-
   const selectedLayerIds = useUiStore((s) => s.selectedLayerIds);
   const categoryByLayerId = useUiStore((s) => s.categoryByLayerId);
   const [startYear, endYear] = useUiStore((s) => s.yearRange);
-
   const [selectedEvent, setSelectedEvent] = useState(null);
-
-  const axisRef = useRef(null);
   const rowsRef = useRef(null);
 
-  // Sync scroll between axis and timeline
-  useEffect(() => {
-    const axis = axisRef.current;
-    const rows = rowsRef.current;
-    if (!axis || !rows) return;
-    const onRowsScroll = () => {
-      axis.scrollLeft = rows.scrollLeft;
-    };
-    rows.addEventListener("scroll", onRowsScroll);
-    return () => {
-      rows.removeEventListener("scroll", onRowsScroll);
-    };
-  }, []);
-
-  // Default first layer
   useEffect(() => {
     if (layers.length > 0 && selectedLayerIds.length === 0) {
       useUiStore.setState({ selectedLayerIds: [layers[0]._id] });
@@ -76,7 +52,6 @@ export default function TimelinePage() {
   }, []);
 
   if (isLoading) return <p className={styles.status}>Loading layers...</p>;
-
   if (isError)
     return <p className={styles.statusError}>Failed to load layers.</p>;
 
@@ -89,14 +64,12 @@ export default function TimelinePage() {
         </p>
       </div>
 
-      {/* Timeline rows container */}
       <div className={styles.timeline} ref={rowsRef}>
         {selectedLayerIds.length === 0 && (
           <p className={styles.status}>
             Select a layer in the sidebar to begin.
           </p>
         )}
-
         {selectedLayerIds.map((id) => (
           <ActiveLayer
             key={id}
@@ -107,10 +80,6 @@ export default function TimelinePage() {
             category={categoryByLayerId[id] ?? ""}
           />
         ))}
-      </div>
-
-      {/* Year axis */}
-      <div ref={axisRef} style={{ overflowX: "hidden" }}>
         <YearAxis />
       </div>
 

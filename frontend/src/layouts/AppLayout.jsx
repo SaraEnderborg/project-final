@@ -1,40 +1,44 @@
+import { useEffect, useRef, useState } from "react";
+import { Outlet, Link } from "react-router-dom";
 import { useLayers } from "../features/layers/hooks";
 import TimelineControls from "../features/timeline/components/TimelineControls";
-import { Outlet, Link } from "react-router-dom";
-import { useEffect, useState } from "react";
 import { useAuthStore } from "../stores/authStore";
 import styles from "./AppLayout.module.css";
 
 export default function AppLayout() {
   const { user, logout, isAuthenticated } = useAuthStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 900);
   const { data: layersData } = useLayers();
   const layers = layersData ?? [];
-
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 900);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+  const burgerRef = useRef(null);
 
   const closeSidebar = () => setIsSidebarOpen(false);
 
+  useEffect(() => {
+    if (!isSidebarOpen) return;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        closeSidebar();
+        burgerRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isSidebarOpen]);
+
   return (
     <div className={styles.root}>
-      {/* Topbar */}
       <header className={styles.topbar}>
         <button
+          ref={burgerRef}
           className={styles.burger}
-          onClick={() => {
-            if (isMobile) setIsSidebarOpen((v) => !v);
-            else setIsSidebarCollapsed((v) => !v);
-          }}
+          onClick={() => setIsSidebarOpen((v) => !v)}
           aria-label={isSidebarOpen ? "Close menu" : "Open menu"}
-          aria-expanded={isMobile ? isSidebarOpen : !isSidebarCollapsed}
+          aria-expanded={isSidebarOpen}
           aria-controls="sidebar"
+          type="button"
         >
           ☰
         </button>
@@ -47,7 +51,11 @@ export default function AppLayout() {
           {isAuthenticated() ? (
             <>
               <span className={styles.userEmail}>{user?.email}</span>
-              <button className={styles.logoutBtn} onClick={logout}>
+              <button
+                className={styles.logoutBtn}
+                onClick={logout}
+                type="button"
+              >
                 Log out
               </button>
             </>
@@ -60,6 +68,7 @@ export default function AppLayout() {
               >
                 Log in
               </Link>
+
               <Link
                 to="/register"
                 className={styles.navLink}
@@ -72,52 +81,35 @@ export default function AppLayout() {
         </div>
       </header>
 
-      {/* Overlay (mobile) */}
-      {isMobile && isSidebarOpen && (
-        <button
-          className={styles.overlay}
-          onClick={closeSidebar}
-          aria-label="Close menu overlay"
-        />
+      {isSidebarOpen && (
+        <>
+          <button
+            className={styles.overlay}
+            onClick={closeSidebar}
+            aria-label="Close menu overlay"
+            type="button"
+          />
+
+          <aside
+            id="sidebar"
+            className={`${styles.sidebar} ${styles.sidebarOpen}`}
+            aria-label="Sidebar"
+          >
+            <nav className={styles.sideNav} aria-label="Primary">
+              <Link to="/" onClick={closeSidebar} className={styles.sideLink}>
+                Timeline
+              </Link>
+            </nav>
+
+            <div className={styles.sidebarContent}>
+              <TimelineControls layers={layers} />
+            </div>
+          </aside>
+        </>
       )}
 
-      <div
-        className={`${styles.shell} ${
-          !isMobile && isSidebarCollapsed ? styles.shellCollapsed : ""
-        }`}
-      >
-        {/* Sidebar */}
-        <aside
-          id="sidebar"
-          className={`${styles.sidebar} ${
-            isMobile && isSidebarOpen ? styles.sidebarOpen : ""
-          } ${!isMobile && isSidebarCollapsed ? styles.sidebarCollapsed : ""}`}
-          aria-hidden={isMobile ? !isSidebarOpen : undefined}
-        >
-          <nav className={styles.sideNav}>
-            <Link to="/" onClick={closeSidebar} className={styles.sideLink}>
-              Timeline
-            </Link>
-          </nav>
-
-          {!isMobile && !isSidebarCollapsed && (
-            <div className={styles.sidebarContent}>
-              <TimelineControls layers={layers} />
-            </div>
-          )}
-
-          {isMobile && isSidebarOpen && (
-            <div className={styles.sidebarContent}>
-              <TimelineControls layers={layers} />
-            </div>
-          )}
-        </aside>
-
-        {/* Main */}
-        <main
-          className={styles.main}
-          onClick={isMobile ? closeSidebar : undefined}
-        >
+      <div className={styles.shell}>
+        <main className={styles.main}>
           <Outlet />
         </main>
       </div>
