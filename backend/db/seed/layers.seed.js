@@ -32,4 +32,19 @@ export const layersSeed = [
     isPublic: true,
     ownerId: null,
   },
+  {
+    name: "Technology & Inventions",
+    slug: "technology_inventions_europe",
+    region: "Europe",
+    rangeStart: new Date("1500-01-01"),
+    rangeEnd: new Date("2000-12-31"),
+    categories: [
+      "industrial",
+      "communication",
+      "transport",
+      "scientific_invention",
+    ],
+    isPublic: true,
+    ownerId: null,
+  },
 ];
