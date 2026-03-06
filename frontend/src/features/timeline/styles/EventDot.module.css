@@ -1,10 +1,10 @@
 .dot {
   appearance: none;
   -webkit-appearance: none;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: none;
   padding: 0;
   margin: 0;
-  background: var(--color);
+  background: transparent;
   font: inherit;
   line-height: 1;
   cursor: pointer;
@@ -12,56 +12,69 @@
   left: var(--left);
   top: 50%;
   transform: translate(-50%, -50%) translate(var(--dx, 0px), var(--dy, 0px));
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  z-index: 1;
+}
+
+/* visible dot */
+.dot::before {
+  content: "";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  transform: translate(-50%, -50%);
   width: 10px;
   height: 10px;
   border-radius: 50%;
-
+  background: var(--color);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   transition:
     width 0.15s ease,
     height 0.15s ease,
     box-shadow 0.15s ease,
     transform 0.15s ease;
-
-  z-index: 1;
 }
 
-.dot:hover {
+.dot:hover::before {
   width: 13px;
   height: 13px;
 }
 
 .dot:focus-visible {
-  outline: 3px solid rgba(232, 228, 217, 0.9);
-  outline-offset: 3px;
+  outline: 3px solid rgba(232, 228, 217, 0.95);
+  outline-offset: 2px;
 }
 
-.selected {
+.selected::before {
   width: 14px;
   height: 14px;
   border: 2px solid #fff;
   box-shadow: 0 0 8px var(--color);
-  z-index: 10;
 }
 
 .cluster {
+  z-index: 5;
+}
+
+.cluster::before {
   width: 14px;
   height: 14px;
   border: 2px solid rgba(255, 255, 255, 0.35);
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.35);
-  z-index: 5;
 }
 
 .cluster::after {
   content: attr(data-count);
   position: absolute;
-  top: -18px;
+  top: -10px;
   left: 50%;
   transform: translateX(-50%);
   font-size: 9px;
   line-height: 1;
   padding: 3px 7px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.98);
   color: #111;
   border: 1px solid rgba(0, 0, 0, 0.25);
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
@@ -69,10 +82,10 @@
   white-space: nowrap;
 }
 
-.trackHover .dot {
+.trackHover .dot::before {
   filter: brightness(1.1);
 }
 
-.trackHover .cluster {
+.trackHover .cluster::before {
   filter: brightness(1.05);
 }
