@@ -3,12 +3,13 @@ import dotStyles from "../styles/EventDot.module.css";
 import styles from "../styles/TimelineRow.module.css";
 import { LAYER_ACCENT, CATEGORY_COLORS, dateToPercent } from "../constants";
 import EventDot from "./EventDot";
+import ClusterModal from "./ClusterModal";
 import { useUiStore } from "../../../stores/uiStore";
 
-const CLUSTER_PX = 8;
-const EXPLODE_DY = 12;
-const EXPLODE_DX = 10;
-const MAX_EXPLODE = 60;
+const CLUSTER_PX = 16;
+const EXPLODE_DY = 32;
+const EXPLODE_DX = 20;
+const MAX_EXPLODE = 0; // Disable expansion on timeline, use modal instead
 const CLUSTER_SEPARATION_PX = 18;
 const STAGGER_DY = 10;
 
@@ -54,6 +55,7 @@ export default function TimelineRow({
 
   const [trackWidth, setTrackWidth] = useState(0);
   const [explodedKey, setExplodedKey] = useState(null);
+  const [selectedCluster, setSelectedCluster] = useState(null);
 
   useEffect(() => {
     if (!trackRef.current) return;
@@ -168,6 +170,14 @@ export default function TimelineRow({
     setExplodedKey((prev) => (prev === key ? null : key));
   }, []);
 
+  const openClusterModal = useCallback((cluster) => {
+    setSelectedCluster(cluster);
+  }, []);
+
+  const closeClusterModal = useCallback(() => {
+    setSelectedCluster(null);
+  }, []);
+
   useEffect(() => {
     if (!explodedKey) return;
 
@@ -240,13 +250,9 @@ export default function TimelineRow({
                     startDate: new Date(),
                     category: "mixed",
                   }}
-                  onClick={() => toggleExplode(c.key)}
+                  onClick={() => openClusterModal(c)}
                   isSelected={false}
-                  title={
-                    isExploded
-                      ? "Click to collapse"
-                      : `${count} events (click to expand)`
-                  }
+                  title={`${count} events (click to view list)`}
                   dataCount={count}
                   colorOverride={clusterColor}
                   leftOverride={c.leftPercent}
@@ -311,6 +317,12 @@ export default function TimelineRow({
             );
           })}
         </div>
+
+        <ClusterModal
+          cluster={selectedCluster}
+          onClose={closeClusterModal}
+          onEventClick={onEventClick}
+        />
       </div>
     </div>
   );
