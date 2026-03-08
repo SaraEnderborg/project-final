@@ -8,7 +8,7 @@ import buildRevolutionsUprisingsQuery from "../../integrations/wikidata/queries/
 import buildGenocidesMassViolenceQuery from "../../integrations/wikidata/queries/war/genocidesMassViolence.query.js";
 import buildMilitaryAlliancesQuery from "../../integrations/wikidata/queries/war/militaryAlliances.query.js";
 
-import { buildEventDoc } from "../../integrations/wikidata/mappers/_mapperUtils.js";
+import { buildEventDoc } from "../../integrations/wikidata/utils/_mapperUtils.js";
 import { startFromCLI } from "./_runImport.js";
 
 const WIKIDATA_ENDPOINT = "https://query.wikidata.org/sparql";

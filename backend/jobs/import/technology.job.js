@@ -7,7 +7,7 @@ import buildCommunicationQuery from "../../integrations/wikidata/queries/technol
 import buildTransportQuery from "../../integrations/wikidata/queries/technology/transport.query.js";
 import buildScientificInventionQuery from "../../integrations/wikidata/queries/technology/scientificinvention.query.js";
 
-import { buildEventDoc } from "../../integrations/wikidata/mappers/_mapperUtils.js";
+import { buildEventDoc } from "../../integrations/wikidata/utils/_mapperUtils.js";
 import { startFromCLI } from "./_runImport.js";
 
 const WIKIDATA_ENDPOINT = "https://query.wikidata.org/sparql";

@@ -8,7 +8,7 @@ import buildMedicalDiscoveriesQuery from "../../integrations/wikidata/queries/me
 import buildPublicHealthQuery from "../../integrations/wikidata/queries/medicine/publicHealth.query.js";
 import buildGermTheoryQuery from "../../integrations/wikidata/queries/medicine/germTheory.query.js";
 
-import { buildEventDoc } from "../../integrations/wikidata/mappers/_mapperUtils.js";
+import { buildEventDoc } from "../../integrations/wikidata/utils/_mapperUtils.js";
 import { startFromCLI } from "./_runImport.js";
 
 const WIKIDATA_ENDPOINT = "https://query.wikidata.org/sparql";
@@ -40,7 +40,6 @@ async function fetchFromWikidata(sparql, { retries = 3 } = {}) {
       if (!response.ok) {
         const text = await response.text();
 
-        // Retry on transient upstream issues
         if (
           [429, 502, 503, 504].includes(response.status) &&
           attempt < retries
@@ -74,10 +73,6 @@ async function fetchFromWikidata(sparql, { retries = 3 } = {}) {
   throw lastErr;
 }
 
-/**
- * Dedupes mapped docs by Wikidata QID.
- * Prefers a doc with a more specific location if duplicates exist.
- */
 function dedupeByWikidataQid(docs) {
   const map = new Map();
 
@@ -248,9 +243,4 @@ export async function runMedicineImport({ dryRun = false } = {}) {
   return full;
 }
 
-// CLI entry point
-// node backend/jobs/import/medicine.job.js
-// node backend/jobs/import/medicine.job.js --dry-run
 startFromCLI("medicine.job.js", runMedicineImport, "medicine");
-
-// TODO: category: "hospital_systems",
